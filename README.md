@@ -2,9 +2,12 @@
 ## iFunny GIF Caption maker
 
 Make GIF Captions. Supercharge your discord posting with le epic ironic gifs. 
+
 Supports both in-program captioning and env arguments.
 
-help: 
+Does **NOT** support mp4.
+
+## Help: 
 ```
 unlustig 0.0.6
 blitzxd
@@ -21,5 +24,13 @@ OPTIONS:
     -V, --version            Print version information
 ```
 
-### license 
+## Building from source.
+This program is made on Rust Edition 2021. I have no idea whether it builds on earlier versions. 
+
+For debugging purposes, omit the `--release` flag.
+```
+cargo build --release 
+```
+
+## License 
 this repository is covered under the MIT license
