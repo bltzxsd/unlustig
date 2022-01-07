@@ -14,7 +14,7 @@ pub struct Cli {
     #[clap(short = 'T', long, help = "Your caption goes here.")]
     text: Option<String>,
 
-    #[clap(short = 'G', long, help = "Path to the GIF file")]
+    #[clap(short = 'G', long, help = "Path to the GIF file (without quotation marks)")]
     gif: Option<String>,
 
     #[clap(
