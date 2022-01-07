@@ -129,7 +129,7 @@ fn run(cli: Cli) -> Result<()> {
         .spawn()?;
     #[cfg(unix)]
     std::process::Command::new("xdg-open")
-        .arg(imagepath)
+        .arg(image_path)
         .spawn()?;
     // dbg!(now.as_micros());
     Ok(())
