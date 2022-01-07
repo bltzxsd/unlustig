@@ -25,7 +25,7 @@ OPTIONS:
 ```
 
 ## Building from source.
-This program is made on Rust Edition 2021. I have no idea whether it builds on earlier versions. 
+This program is made on Rust Edition 2021. I have no idea if it builds on earlier versions. 
 
 For debugging purposes, omit the `--release` flag.
 ```
