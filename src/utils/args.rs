@@ -1,12 +1,10 @@
 use std::{
     fs::{File, OpenOptions},
-    path::{Path, PathBuf},
+    path::PathBuf,
 };
 
-use anyhow::{Context, Result};
+use anyhow::Context;
 use clap::{Parser, ValueHint};
-
-// use crate::error::ErrorKind;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
@@ -80,25 +78,5 @@ impl Cli {
                 );
             }
         }
-    }
-}
-
-// #[derive(Debug, Clone)]
-// pub enum Mode<'m> {
-//     Cli(Option<&'m String>),
-//     InProgram,
-//     Default,
-// }
-
-pub(crate) trait ToFile {
-    fn to_file(&self) -> Result<File, std::io::Error>;
-}
-
-impl<T> ToFile for T
-where
-    T: AsRef<Path>,
-{
-    fn to_file(&self) -> Result<File, std::io::Error> {
-        OpenOptions::new().read(true).open(self)
     }
 }
