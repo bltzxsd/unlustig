@@ -2,14 +2,18 @@ use std::fs::File;
 
 use anyhow::{Context, Result};
 use colored::Colorize;
-use image::gif::{GifDecoder, GifEncoder};
-use image::{AnimationDecoder, GenericImage, ImageDecoder, RgbaImage};
+use image::{
+    gif::{GifDecoder, GifEncoder},
+    AnimationDecoder, GenericImage, ImageDecoder, RgbaImage,
+};
 use klask::Settings;
 use log::{error, info};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use rusttype::Font;
-use utils::args::Cli;
-use utils::image::{SetUp, TextImage};
+use utils::{
+    args::Cli,
+    image::{SetUp, TextImage},
+};
 
 mod utils;
 
