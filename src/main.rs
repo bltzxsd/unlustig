@@ -15,15 +15,20 @@ use utils::{
     image::{SetUp, TextImage},
 };
 
+mod error;
 mod utils;
 
 fn main() {
     pretty_env_logger::init();
-    klask::run_derived::<Cli, _>(Settings::default(), |cli| {
+
+    let settings = Settings {
+        custom_font: Some(include_bytes!("../font/mononoki-Regular.ttf")),
+        ..Settings::default()
+    };
+
+    klask::run_derived::<Cli, _>(settings, |cli| {
         if let Err(e) = run(cli) {
-            for error in e.chain() {
-                error!("{}", error);
-            }
+            error!("{:?}", e);
         }
     });
 }
@@ -32,7 +37,7 @@ fn run(cli: Cli) -> Result<()> {
     let font = Font::try_from_bytes(include_bytes!("../font/ifunny.otf"))
         .context("font could not be read")?;
 
-    let (gif, text, out_path, name) = (cli.gif(), cli.text(), cli.output(), cli.name());
+    let (gif, text, out_path, name) = (cli.gif()?, cli.text(), cli.output()?, cli.name());
 
     let decoder = GifDecoder::new(gif)?;
     let (gif_w, gif_h) = decoder.dimensions();
@@ -40,7 +45,7 @@ fn run(cli: Cli) -> Result<()> {
     let init = SetUp::init(font).with_dimensions(gif_w, gif_h);
     info!("Creating caption image..");
 
-    let image = TextImage::new(init, text)?.render();
+    let image = TextImage::new(init, text)?.render()?;
     info!("{}", "Caption image created!".green());
 
     let mut frames = decoder.into_frames().collect_frames()?;
@@ -49,12 +54,15 @@ fn run(cli: Cli) -> Result<()> {
     frames.par_iter_mut().for_each(|f| {
         let f = f.buffer_mut();
         let mut buffer = RgbaImage::new(gif_w, gif_h + image.height());
-        // image::imageops::overlay(&mut buffer, &image, 0, 0);
-        buffer.copy_from(&image, 0, 0).expect("could not copy");
-        // image::imageops::overlay(&mut buffer, f, 0, image_h);
+
+        buffer
+            .copy_from(&image, 0, 0)
+            .expect("could not copy buffer");
+
         buffer
             .copy_from(f, 0, image.height())
             .expect("could not copy buffer");
+
         *f = buffer;
     });
 
@@ -75,6 +83,8 @@ fn run(cli: Cli) -> Result<()> {
     std::process::Command::new("explorer.exe")
         .arg(out_path)
         .spawn()?;
+        
+    // Opening File Manager with UNIX is not tested. 
     #[cfg(unix)]
     std::process::Command::new("xdg-open")
         .arg(out_path)
