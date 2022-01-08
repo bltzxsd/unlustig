@@ -83,8 +83,8 @@ fn run(cli: Cli) -> Result<()> {
     std::process::Command::new("explorer.exe")
         .arg(out_path)
         .spawn()?;
-        
-    // Opening File Manager with UNIX is not tested. 
+
+    // Opening File Manager with UNIX is not tested.
     #[cfg(unix)]
     std::process::Command::new("xdg-open")
         .arg(out_path)
