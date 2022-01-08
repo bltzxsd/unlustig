@@ -3,19 +3,22 @@ use std::{
     path::PathBuf,
 };
 
-use anyhow::Context;
+use anyhow::{Context, Result};
 use clap::{Parser, ValueHint};
+
+use crate::error::ErrorKind;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
 pub struct Cli {
     #[clap(short = 'T', long, help = "Your caption goes here.")]
-    text: String,
+    caption: String,
 
     #[clap(
         short = 'G',
         long,
-        help = "Path to the GIF file (without quotation marks)",
+        help = "Path to the GIF file",
+        value_name = "Path to GIF",
         parse(from_os_str),
         value_hint = ValueHint::FilePath
     )]
@@ -24,23 +27,25 @@ pub struct Cli {
     #[clap(
         short = 'o',
         long,
-        help = "Set the location of the output file (On Windows: Pictures folder | On Unix: Current directory))",
+        help = "Set the location of the output file (On Windows: User\\Pictures\\ | On Unix: Current directory)",
+        value_name = "Output Directory",
         parse(from_os_str),
         value_hint = ValueHint::DirPath
     )]
-    output: Option<PathBuf>,
+    output_directory: Option<PathBuf>,
 
     #[clap(
         short = 'n',
         long,
+        value_name = "Outputted GIF's name",
         help = "Set the name of the output file (default: out.gif)"
     )]
-    name: Option<String>,
+    output_name: Option<String>,
 }
 
 impl Cli {
     pub fn name(&self) -> String {
-        match &self.name {
+        match &self.output_name {
             Some(string) => {
                 if !string.contains(".gif") {
                     return format!("{}.gif", string);
@@ -51,31 +56,37 @@ impl Cli {
         }
     }
     pub fn text(&self) -> &str {
-        self.text.trim()
+        self.caption.trim()
     }
 
-    pub fn gif(&self) -> File {
+    pub fn gif(&self) -> Result<File> {
+        if self
+            .gif
+            .extension()
+            .context("could not get the input file's extension")?
+            != "gif"
+        {
+            return Err(anyhow::Error::from(ErrorKind::NotAGif));
+        }
         OpenOptions::new()
             .read(true)
             .open(&self.gif)
             .context("could not read gif")
-            .unwrap()
     }
 
-    pub fn output(&self) -> PathBuf {
-        match &self.output {
-            Some(output) => output.to_path_buf(),
+    pub fn output(&self) -> Result<PathBuf> {
+        match &self.output_directory {
+            Some(output) => Ok(output.to_path_buf()),
             None => {
                 #[cfg(windows)]
-                return PathBuf::from(
-                    std::env::var("UserProfile").expect("no userprofile env key found"),
+                return Ok(PathBuf::from(
+                    std::env::var("UserProfile").context("unable to read userprofile env var")?,
                 )
-                .join("Pictures");
+                .join("Pictures"));
                 #[cfg(unix)]
-                return PathBuf::from(
-                    std::env::current_dir()
-                        .expect("lacking permissions for current dir or curr dir is invalid"),
-                );
+                return Ok(PathBuf::from(std::env::current_dir().context(
+                    "lacking permissions for current dir or curr dir is invalid",
+                )?));
             }
         }
     }
