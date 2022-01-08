@@ -3,9 +3,10 @@
 
 Make GIF Captions. Supercharge your discord posting with le epic ironic gifs. 
 
-Supports both in-program captioning and env arguments.
+You can hover over fields to get help text.
 
 Does **NOT** support mp4.
+
 
 ## Building from source.
 This program is made on Rust Edition 2021. 
