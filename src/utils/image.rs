@@ -41,19 +41,18 @@ impl SetUp {
 pub struct TextImage {
     init: SetUp,
     strings: Vec<String>,
-    // buffer: ImageBuffer<Rgba<u8>, Vec<u8>>,
 }
 
 impl TextImage {
     pub fn new(init: SetUp, text: &str) -> Result<Self> {
         let text_nlsplit: Vec<_> = text.split('\n').collect();
-        let mut split_texts: Vec<Vec<_>> = vec![];
-        for str in text_nlsplit {
-            split_texts.push(str.split_whitespace().collect());
-        }
+        let split_texts: Vec<Vec<_>> = text_nlsplit
+            .iter()
+            .map(|str| str.split_whitespace().collect())
+            .collect();
+
         let scale = init.scale();
 
-        // let (height, width) = text_size(scale, init.font(), text);
         let strings = Self::wrap_text(
             &Self::sum_until_fit(scale, init.font(), init.gif_w as i32, &split_texts),
             &split_texts,
@@ -62,21 +61,28 @@ impl TextImage {
         Ok(Self { init, strings })
     }
 
-    pub fn render(self) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
-        let images: Vec<_> = self
+    pub fn render(self) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>> {
+        let mut images: Vec<_> = self
             .strings
             .par_iter()
             .map(|text| self.render_text(text))
             .collect();
-        let image = Self::v_concat(&images);
-        let image_h = image.height();
 
-        let image = Self::set_bg(image, self.init.gif_w);
-        Self::resize(image, self.init.gif_w, image_h as _)
+        let (image, single) = if images.len() == 1 {
+            // this is fine because there is only one element
+            // and so we do not need to concatenate images.
+            (images.remove(0), true)
+        } else {
+            (Self::v_concat(&images)?, false)
+        };
+        let image_h = image.height();
+        let image = Self::set_bg(image, self.init.gif_w, single)?;
+        Ok(Self::resize(image, self.init.gif_w, image_h as _))
     }
 
     fn render_text(&self, text: &str) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
         let (text_width, text_height) = text_size(self.init.scale(), self.init.font(), text);
+        // padding for the text up and down
         let y_extension = (text_height as f32 * 1.2) as u32;
         let mut image = RgbaImage::new(text_width as u32, y_extension);
         let y_offset = (image.height() as i32 - text_height) / 2;
@@ -89,7 +95,6 @@ impl TextImage {
             self.init.font(),
             text,
         );
-        // image.save()
         image
     }
 
@@ -105,24 +110,25 @@ impl TextImage {
             image::imageops::FilterType::Gaussian,
         )
     }
+
     fn set_bg(
         buffer: ImageBuffer<Rgba<u8>, Vec<u8>>,
         gif_w: u32,
-    ) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
-        let mut bg = blank_buffer_new(gif_w, buffer.height() as _);
+        single: bool,
+    ) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>> {
+        let mut bg = blank_buffer_new(gif_w, buffer.height() as _, single);
 
         let (x, y) = {
             let (bg_h, bg_w) = (bg.height() as i32, bg.width() as i32);
             let (img_h, img_w) = (buffer.height() as i32, buffer.width() as i32);
             ((bg_w - img_w) / 2, (bg_h - img_h) / 2)
         };
-        // dbg!(x, y);
 
         image::imageops::overlay(&mut bg, &buffer, x as _, y as _);
-        bg
+        Ok(bg)
     }
 
-    fn v_concat<I, P, S>(images: &[I]) -> ImageBuffer<P, Vec<S>>
+    fn v_concat<I, P, S>(images: &[I]) -> Result<ImageBuffer<P, Vec<S>>>
     where
         I: GenericImageView<Pixel = P>,
         P: Pixel<Subpixel = S> + 'static,
@@ -144,14 +150,11 @@ impl TextImage {
 
         // Copy each input image at the correct location in the output image.
         for img in images {
-            imgbuf
-                .copy_from(img, (img_width_out - img.width()) / 2, accumulated_height)
-                .map_err(|e| println!("{}", e))
-                .unwrap();
+            imgbuf.copy_from(img, (img_width_out - img.width()) / 2, accumulated_height)?;
             accumulated_height += img.height();
         }
 
-        imgbuf
+        Ok(imgbuf)
     }
 
     fn sum_until_fit(
@@ -163,10 +166,10 @@ impl TextImage {
         let mut split_at = vec![];
         for elem in split_texts {
             let mut accumulator = 0;
-            let mut str_widths = vec![];
-            for text in elem {
-                str_widths.push(text_size(scale, font, text).0);
-            }
+            let str_widths: Vec<i32> = elem
+                .iter()
+                .map(|text| text_size(scale, font, text).0)
+                .collect();
 
             let mut tempvec = Vec::with_capacity(str_widths.len() + 1);
             for x in 0..str_widths.len() {
@@ -184,13 +187,10 @@ impl TextImage {
             tempvec.push(str_widths.len());
             split_at.push(tempvec);
         }
-        // split_at.sort_unstable();
         split_at
     }
 
     fn npercent(current_width: u32, target_width: u32) -> u32 {
-        // dbg!(current_width, target_width);
-        // dbg!((current_width as f32 * (target_width as f32 / current_width as f32)) as u32);
         (current_width as f32 * (target_width as f32 / current_width as f32)) as u32
     }
 
@@ -199,25 +199,26 @@ impl TextImage {
         let mut already_checked = 0;
 
         for (text, split) in texts.iter().zip(splits) {
-            // dbg!(&text, &split);
             for pos in split {
                 let string = text[already_checked..*pos].join(" ");
                 wrapped_strings.push(string);
                 already_checked = *pos;
-                // dbg!(string);
             }
             already_checked = 0;
         }
-
         wrapped_strings
     }
 }
 
-fn blank_buffer_new(w: u32, h: u32) -> RgbaImage {
-    let mut image = RgbaImage::new((w as f32 * 1.2) as _, (h as f32 * 1.2) as _);
+fn blank_buffer_new(w: u32, h: u32, single: bool) -> RgbaImage {
+    // text with only one word on it, does not have enough padding to look good
+    let scale_factor: f32 = if single { 2.0 } else { 1.2 };
+    let mut image = RgbaImage::new(
+        (w as f32 * scale_factor) as _,
+        (h as f32 * scale_factor) as _,
+    );
     for px in image.pixels_mut() {
         px.0 = [255, 255, 255, 255];
     }
-    // println!("{:?}", image.to_vec());
     image
 }

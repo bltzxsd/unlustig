@@ -1,80 +1,93 @@
 use std::{
     fs::{File, OpenOptions},
-    path::Path,
+    path::PathBuf,
 };
 
 use anyhow::{Context, Result};
-use clap::Parser;
+use clap::{Parser, ValueHint};
 
 use crate::error::ErrorKind;
 
-#[derive(Parser)]
+#[derive(Parser, Debug)]
 #[clap(author, version, about)]
 pub struct Cli {
     #[clap(short = 'T', long, help = "Your caption goes here.")]
-    text: Option<String>,
+    caption: String,
 
-    #[clap(short = 'G', long, help = "Path to the GIF file")]
-    gif: Option<String>,
+    #[clap(
+        short = 'G',
+        long,
+        help = "Path to the GIF file",
+        value_name = "Path to GIF",
+        parse(from_os_str),
+        value_hint = ValueHint::FilePath
+    )]
+    gif: PathBuf,
 
     #[clap(
         short = 'o',
         long,
+        help = "Set the location of the output file (On Windows: User\\Pictures\\ | On Unix: Current directory)",
+        value_name = "Output Directory",
+        parse(from_os_str),
+        value_hint = ValueHint::DirPath
+    )]
+    output_directory: Option<PathBuf>,
+
+    #[clap(
+        short = 'n',
+        long,
+        value_name = "Outputted GIF's name",
         help = "Set the name of the output file (default: out.gif)"
     )]
-    output: Option<String>,
+    output_name: Option<String>,
 }
 
 impl Cli {
-    pub fn text(&self) -> Option<&String> {
-        self.text.as_ref()
+    pub fn name(&self) -> String {
+        match &self.output_name {
+            Some(string) => {
+                if !string.contains(".gif") {
+                    return format!("{}.gif", string);
+                }
+                string.to_string()
+            }
+            None => "out.gif".to_string(),
+        }
+    }
+    pub fn text(&self) -> &str {
+        self.caption.trim()
     }
 
     pub fn gif(&self) -> Result<File> {
-        if self.gif.is_none() {
-            return Err(anyhow::Error::new(ErrorKind::BadGIF));
+        if self
+            .gif
+            .extension()
+            .context("could not get the input file's extension")?
+            != "gif"
+        {
+            return Err(anyhow::Error::from(ErrorKind::NotAGif));
         }
         OpenOptions::new()
             .read(true)
-            .open(self.gif.as_ref().expect("gif unavailable"))
+            .open(&self.gif)
             .context("could not read gif")
     }
 
-    pub fn output(&self) -> Mode {
-        let (text, gif, output) = (
-            self.text.is_some(),
-            self.gif.is_some(),
-            self.output.is_some(),
-        );
-        if text && gif && !output {
-            // output intentionally left out for default
-            Mode::Default
-        } else if !text && !gif && !output {
-            // nothing given, get all during runtime
-            Mode::InProgram
-        } else {
-            // all given
-            Mode::Cli(self.output.as_ref())
+    pub fn output(&self) -> Result<PathBuf> {
+        match &self.output_directory {
+            Some(output) => Ok(output.to_path_buf()),
+            None => {
+                #[cfg(windows)]
+                return Ok(PathBuf::from(
+                    std::env::var("UserProfile").context("unable to read userprofile env var")?,
+                )
+                .join("Pictures"));
+                #[cfg(unix)]
+                return Ok(PathBuf::from(std::env::current_dir().context(
+                    "lacking permissions for current dir or curr dir is invalid",
+                )?));
+            }
         }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub enum Mode<'m> {
-    Cli(Option<&'m String>),
-    InProgram,
-    Default,
-}
-
-pub(crate) trait ToFile {
-    fn to_file(&self) -> Result<File, std::io::Error>;
-}
-
-impl<T> ToFile for T
-where
-    T: AsRef<Path>,
-{
-    fn to_file(&self) -> Result<File, std::io::Error> {
-        OpenOptions::new().read(true).open(self)
     }
 }
