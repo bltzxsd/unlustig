@@ -2034,6 +2034,7 @@ dependencies = [
  "pretty_env_logger",
  "rayon",
  "rusttype",
+ "thiserror",
 ]
 
 [[package]]
