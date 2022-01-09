@@ -3,7 +3,6 @@ use std::{cmp::Ordering, path::Path};
 use anyhow::Result;
 use image::{GenericImage, GenericImageView, ImageBuffer, Pixel, Primitive, Rgba, RgbaImage};
 use imageproc::drawing::{draw_text_mut, text_size};
-use log::info;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rusttype::{Font, Scale};
 
@@ -239,10 +238,8 @@ pub fn compress_gif(
     } else {
         "gifsicle"
     };
-    info!("Optimization enabled. Optimizing gif...");
     let mut command = std::process::Command::new(appdata.join(exe));
     enable_lossy(lossy, reduce, &mut command, level, filepath)?;
-    info!("Optimization done!");
     Ok(())
 }
 
@@ -260,28 +257,28 @@ fn enable_lossy(
                 .args([level, filepath.to_str().expect("cannot convert to &str")])
                 .arg(format!("--lossy={}", lossy))
                 .args(&["--colors", "256"])
-                .spawn()?;
+                .spawn()?
         }
         Some(lossy) => {
             command
                 .arg("-b")
                 .args([level, filepath.to_str().expect("cannot convert to &str")])
-                .arg(lossy)
-                .spawn()?;
+                .arg(format!("--lossy={}", lossy))
+                .spawn()?
         }
         None if reduce => {
             command
                 .arg("-b")
                 .args([level, filepath.to_str().expect("cannot convert to &str")])
                 .args(["--colors", "256"])
-                .spawn()?;
+                .spawn()?
         }
         None => {
             command
                 .arg("-b")
                 .args([level, filepath.to_str().expect("cannot convert to &str")])
-                .spawn()?;
+                .spawn()?
         }
-    };
+    }.wait()?;
     Ok(())
 }
