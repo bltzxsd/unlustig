@@ -2,10 +2,11 @@
 
 ## iFunny GIF Caption maker
 
+<img align="right" width="281" height="255" src="https://i.imgur.com/Gb3Aptm.gif">
+
 Make GIF Captions. Supercharge your discord posting with le epic ironic gifs. 
 
 You can even hover over input field names to get help text! 
-<img align="right" width="348" height="93" src="https://media.discordapp.net/attachments/834076909557645335/929745021148729364/unknown.png">
 
 Does **NOT** support mp4.
 
