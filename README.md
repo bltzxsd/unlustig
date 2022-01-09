@@ -1,4 +1,4 @@
-# unlustig-rs
+# ![screenshot](https://media.discordapp.net/attachments/690220522600267780/929755673011580938/unknown.png)
 
 ## iFunny GIF Caption maker
 
