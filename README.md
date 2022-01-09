@@ -5,7 +5,7 @@
 
 Make GIF Captions. Supercharge your discord posting with le epic ironic gifs. 
 
-You can hover over fields to get help text.
+You can hover over input field names to get help text.
 
 Does **NOT** support mp4.
 

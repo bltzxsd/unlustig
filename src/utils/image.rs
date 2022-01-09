@@ -242,6 +242,7 @@ pub fn compress_gif(
     info!("Optimization enabled. Optimizing gif...");
     let mut command = std::process::Command::new(appdata.join(exe));
     enable_lossy(lossy, reduce, &mut command, level, filepath)?;
+    info!("Optimization done!");
     Ok(())
 }
 
