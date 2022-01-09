@@ -6,6 +6,7 @@ Make GIF Captions. Supercharge your discord posting with le epic ironic gifs.
 
 You can hover over input field names to get help text.
 <img align="right" width="348" height="93" src="https://media.discordapp.net/attachments/834076909557645335/929745021148729364/unknown.png">
+
 Does **NOT** support mp4.
 
 ## Example
