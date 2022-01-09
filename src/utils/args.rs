@@ -77,7 +77,10 @@ impl Cli {
     pub fn compress(&self) -> Result<(PathBuf, String)> {
         // this is an exteremely dumb hack of including an exe
         // temporary hack until I figure out how to bundle another exe with wix
-        let compression = format!("-{}", self.optimization.as_ref().expect("not a value"));
+        let compression = match &self.optimization {
+            Some(value) => format!("-{}", value),
+            None => return Err(anyhow::Error::new(ErrorKind::InvalidOptimization)),
+        };
         #[cfg(windows)]
         {
             let gifsicle = include_bytes!("../../gifsicle/gifsicle.exe");
