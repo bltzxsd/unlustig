@@ -279,6 +279,6 @@ fn enable_lossy(
                 .args([level, filepath.to_str().expect("cannot convert to &str")])
                 .spawn()?
         }
-    }.wait()?;
+    };
     Ok(())
 }

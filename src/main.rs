@@ -84,7 +84,7 @@ fn run(cli: &Cli) -> Result<()> {
     if let Ok((appdata, level)) = cli.compress() {
         info!("Optimization is enabled. Optimizing GIF..");
         compress_gif(&appdata, &level, &file_out_path, cli.lossy(), cli.reduce())?;
-        info!("Optimization done.")
+        info!("GIF optimization may take some time. The optimization will be complete when the terminal window closes.")
     }
 
     #[cfg(windows)]
