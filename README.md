@@ -1,6 +1,6 @@
 # ![screenshot](https://media.discordapp.net/attachments/690220522600267780/929755673011580938/unknown.png)
 
-## iFunny GIF Caption maker
+# iFunny GIF Caption maker
 
 <img align="right" width="281" height="255" src="https://i.imgur.com/Gb3Aptm.gif">
 
