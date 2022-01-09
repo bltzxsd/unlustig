@@ -1,3 +1,5 @@
+#![windows_subsystem = "windows"]
+
 use std::fs::File;
 
 use anyhow::{Context, Result};
@@ -12,7 +14,7 @@ use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use rusttype::Font;
 use utils::{
     args::Cli,
-    image::{SetUp, TextImage},
+    image::{compress_gif, SetUp, TextImage},
 };
 
 mod error;
@@ -27,13 +29,13 @@ fn main() {
     };
 
     klask::run_derived::<Cli, _>(settings, |cli| {
-        if let Err(e) = run(cli) {
+        if let Err(e) = run(&cli) {
             error!("{:?}", e);
         }
     });
 }
 
-fn run(cli: Cli) -> Result<()> {
+fn run(cli: &Cli) -> Result<()> {
     let font = Font::try_from_bytes(include_bytes!("../font/ifunny.otf"))
         .context("font could not be read")?;
 
@@ -45,7 +47,7 @@ fn run(cli: Cli) -> Result<()> {
     let init = SetUp::init(font).with_dimensions(gif_w, gif_h);
     info!("Creating caption image..");
 
-    let image = TextImage::new(init, text)?.render()?;
+    let image = TextImage::new(init, text).render()?;
     info!("{}", "Caption image created!".green());
 
     let mut frames = decoder.into_frames().collect_frames()?;
@@ -67,17 +69,21 @@ fn run(cli: Cli) -> Result<()> {
     });
 
     let file_out = File::create(&out_path.join(&name))?;
-
-    let mut encoder = GifEncoder::new_with_speed(file_out, 30);
+    let file_out_path = out_path.join(&name);
+    let mut encoder = GifEncoder::new_with_speed(&file_out, 30);
     encoder.set_repeat(image::gif::Repeat::Infinite)?;
     encoder.encode_frames(frames)?;
 
     info!(
-        "GIF: {} {} at {}, if on Windows, you should see the explorer pop up!",
+        "GIF: {} {} at {}",
         &name,
         "generated".green(),
         out_path.to_str().expect("invalid output path"),
     );
+
+    if let Ok((appdata, level)) = cli.compress() {
+        compress_gif(&appdata, &level, &file_out_path, cli.lossy(), cli.reduce())?;
+    }
 
     #[cfg(windows)]
     std::process::Command::new("explorer.exe")

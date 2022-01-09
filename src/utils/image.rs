@@ -1,8 +1,9 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, path::Path};
 
 use anyhow::Result;
 use image::{GenericImage, GenericImageView, ImageBuffer, Pixel, Primitive, Rgba, RgbaImage};
 use imageproc::drawing::{draw_text_mut, text_size};
+use log::info;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rusttype::{Font, Scale};
 
@@ -13,7 +14,7 @@ pub struct SetUp {
 }
 
 impl SetUp {
-    pub fn init(font: Font<'static>) -> Self {
+    pub const fn init(font: Font<'static>) -> Self {
         Self {
             font,
             scale: Scale { x: 0.0, y: 0.0 },
@@ -29,11 +30,11 @@ impl SetUp {
         }
     }
 
-    pub fn font(&self) -> &Font<'_> {
+    pub const fn font(&self) -> &Font<'_> {
         &self.font
     }
 
-    pub fn scale(&self) -> Scale {
+    pub const fn scale(&self) -> Scale {
         self.scale
     }
 }
@@ -44,7 +45,7 @@ pub struct TextImage {
 }
 
 impl TextImage {
-    pub fn new(init: SetUp, text: &str) -> Result<Self> {
+    pub fn new(init: SetUp, text: &str) -> Self {
         let text_nlsplit: Vec<_> = text.split('\n').collect();
         let split_texts: Vec<Vec<_>> = text_nlsplit
             .iter()
@@ -58,37 +59,40 @@ impl TextImage {
             &split_texts,
         );
 
-        Ok(Self { init, strings })
+        Self { init, strings }
     }
 
     pub fn render(self) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>> {
-        let mut images: Vec<_> = self
-            .strings
-            .par_iter()
-            .map(|text| self.render_text(text))
-            .collect();
+        let single = self.strings.len() == 1;
 
-        let (image, single) = if images.len() == 1 {
+        let image = if single {
             // this is fine because there is only one element
             // and so we do not need to concatenate images.
-            (images.remove(0), true)
+            self.render_text(&self.strings[0], single)
         } else {
-            (Self::v_concat(&images)?, false)
+            let images: Vec<_> = self
+                .strings
+                .par_iter()
+                .map(|text| self.render_text(text, single))
+                .collect();
+            Self::v_concat(&images)?
         };
+
         let image_h = image.height();
-        let image = Self::set_bg(image, self.init.gif_w, single)?;
+        let image = Self::set_bg(&image, self.init.gif_w)?;
         Ok(Self::resize(image, self.init.gif_w, image_h as _))
     }
 
-    fn render_text(&self, text: &str) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+    fn render_text(&self, text: &str, single: bool) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
         let (text_width, text_height) = text_size(self.init.scale(), self.init.font(), text);
         // padding for the text up and down
-        let y_extension = (text_height as f32 * 1.2) as u32;
+        let scale = if single { 2.5 } else { 1.3 };
+        let y_extension = (text_height as f32 * scale) as u32;
         let mut image = RgbaImage::new(text_width as u32, y_extension);
         let y_offset = (image.height() as i32 - text_height) / 2;
         draw_text_mut(
             &mut image,
-            Rgba([0u8, 0u8, 0u8, 255u8]),
+            Rgba([0_u8, 0_u8, 0_u8, 255_u8]),
             0,
             y_offset,
             self.init.scale(),
@@ -112,11 +116,10 @@ impl TextImage {
     }
 
     fn set_bg(
-        buffer: ImageBuffer<Rgba<u8>, Vec<u8>>,
+        buffer: &ImageBuffer<Rgba<u8>, Vec<u8>>,
         gif_w: u32,
-        single: bool,
     ) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>> {
-        let mut bg = blank_buffer_new(gif_w, buffer.height() as _, single);
+        let mut bg = blank_buffer_new(gif_w, buffer.height() as _);
 
         let (x, y) = {
             let (bg_h, bg_w) = (bg.height() as i32, bg.width() as i32);
@@ -124,7 +127,7 @@ impl TextImage {
             ((bg_w - img_w) / 2, (bg_h - img_h) / 2)
         };
 
-        image::imageops::overlay(&mut bg, &buffer, x as _, y as _);
+        image::imageops::overlay(&mut bg, buffer, x as _, y as _);
         Ok(bg)
     }
 
@@ -210,15 +213,74 @@ impl TextImage {
     }
 }
 
-fn blank_buffer_new(w: u32, h: u32, single: bool) -> RgbaImage {
+fn blank_buffer_new(w: u32, h: u32) -> RgbaImage {
     // text with only one word on it, does not have enough padding to look good
-    let scale_factor: f32 = if single { 2.0 } else { 1.2 };
+    let scale_factor: f32 = 1.2;
     let mut image = RgbaImage::new(
         (w as f32 * scale_factor) as _,
         (h as f32 * scale_factor) as _,
     );
+
     for px in image.pixels_mut() {
         px.0 = [255, 255, 255, 255];
     }
     image
+}
+
+pub fn compress_gif(
+    appdata: &Path,
+    level: &str,
+    filepath: &Path,
+    lossy: Option<&String>,
+    reduce: bool,
+) -> Result<(), anyhow::Error> {
+    let exe = if cfg!(windows) {
+        "gifsicle.exe"
+    } else {
+        "gifsicle"
+    };
+    info!("Optimization enabled. Optimizing gif...");
+    let mut command = std::process::Command::new(appdata.join(exe));
+    enable_lossy(lossy, reduce, &mut command, level, filepath)?;
+    Ok(())
+}
+
+fn enable_lossy(
+    lossy: Option<&String>,
+    reduce: bool,
+    command: &mut std::process::Command,
+    level: &str,
+    filepath: &Path,
+) -> Result<(), anyhow::Error> {
+    match lossy {
+        Some(lossy) if reduce => {
+            command
+                .arg("-b")
+                .args([level, filepath.to_str().expect("cannot convert to &str")])
+                .arg(format!("--lossy={}", lossy))
+                .args(&["--colors", "256"])
+                .spawn()?;
+        }
+        Some(lossy) => {
+            command
+                .arg("-b")
+                .args([level, filepath.to_str().expect("cannot convert to &str")])
+                .arg(lossy)
+                .spawn()?;
+        }
+        None if reduce => {
+            command
+                .arg("-b")
+                .args([level, filepath.to_str().expect("cannot convert to &str")])
+                .args(["--colors", "256"])
+                .spawn()?;
+        }
+        None => {
+            command
+                .arg("-b")
+                .args([level, filepath.to_str().expect("cannot convert to &str")])
+                .spawn()?;
+        }
+    };
+    Ok(())
 }

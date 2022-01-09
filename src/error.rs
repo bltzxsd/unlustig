@@ -4,5 +4,5 @@ use thiserror::Error;
 pub enum ErrorKind {
     // The supplied file was not a gif
     #[error("not a gif")]
-    NotAGif,
+    InvalidGIF,
 }
