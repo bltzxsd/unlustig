@@ -22,7 +22,8 @@ cargo build --release
 
 ## Dependencies
 
-* gifsicle 
+* gifsicle
+
 Gifsicle is used for GIF compression. 
 
 It is already packaged in the executable for windows. 
