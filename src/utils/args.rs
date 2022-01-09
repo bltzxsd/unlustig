@@ -81,6 +81,7 @@ impl Cli {
             Some(value) => format!("-{}", value),
             None => return Err(anyhow::Error::new(ErrorKind::InvalidOptimization)),
         };
+
         #[cfg(windows)]
         {
             let gifsicle = include_bytes!("../../gifsicle/gifsicle.exe");
