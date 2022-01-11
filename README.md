@@ -8,7 +8,12 @@ Make GIF Captions. Supercharge your discord posting with le epic ironic gifs.
 
 You can even hover over input field names to get help text! 
 
-Supported formats: GIF, MP4, AVI, MKV and WebM
+Supported formats: 
+- GIF
+- MP4 
+- AVI
+- MKV 
+- WebM
 
 Optimization only works with GIF files.
 
