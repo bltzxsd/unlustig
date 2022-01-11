@@ -91,7 +91,7 @@ impl Cli {
         };
         match &self.output_name {
             Some(string) => {
-                if string.contains(ext) {
+                if !string.contains(ext) {
                     return format!("{}{}", string, ext);
                 }
                 string.to_owned()
