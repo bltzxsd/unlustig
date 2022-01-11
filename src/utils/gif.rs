@@ -1,4 +1,4 @@
-use std::{io::Write, path::PathBuf, process::Command};
+use std::{io::Write, path::{PathBuf, Path}, process::Command};
 
 use anyhow::Result;
 use log::{info, warn};
@@ -44,11 +44,11 @@ impl Gifsicle {
         opt: Option<String>,
         lossy: Option<u32>,
         reduce: bool,
-        imagepath: PathBuf,
+        imagepath: &Path,
     ) -> Result<()> {
         let mut args = vec!["-b".into(), imagepath.display().to_string()];
         if let Some(v) = opt {
-            args.push(format!("-{}", v))
+            args.push(format!("-{}", v));
         }
         if let Some(l) = lossy {
             args.push(format!("--lossy={}", l));
