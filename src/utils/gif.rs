@@ -1,23 +1,23 @@
 use std::{
+    env,
     fs::File,
-    io::Write,
     path::{Path, PathBuf},
     process::Command,
 };
 
-use anyhow::Result;
+use anyhow::{Context, Result};
 use colored::Colorize;
 use image::{
     gif::{GifDecoder, GifEncoder},
     AnimationDecoder, GenericImage, ImageDecoder, RgbaImage,
 };
-use log::{info, warn};
+use log::info;
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use rusttype::Font;
 
 use crate::utils::image::{SetUp, TextImage};
 
-use super::args::Cli;
+use super::{appdata_init, args::Cli};
 
 pub struct Gifsicle {
     exe: PathBuf,
@@ -25,33 +25,19 @@ pub struct Gifsicle {
 
 impl Gifsicle {
     pub fn init() -> Result<Self> {
-        #[cfg(unix)]
-        return Ok(Self {
-            exe: PathBuf::new(),
-        });
-
-        #[cfg(windows)]
-        let gifsicle = include_bytes!("../../deps/gifsicle/gifsicle.exe");
-        // folder: AppData/unlustig-rs/
-        let appdata = PathBuf::from(std::env::var("APPDATA")?).join("unlustig-rs");
-        if !appdata.exists() {
-            warn!("{} does not exist. Creating...", appdata.display());
-            std::fs::create_dir(&appdata)?;
-            let exe = appdata.join("gifsicle.exe");
-            if !exe.exists() {
-                let mut sicle = std::fs::File::create(exe)?;
-                sicle.write_all(gifsicle)?;
-                info!(
-                    "Wrote gifsicle.exe to {}",
-                    appdata.join("gifsicle.exe").display()
-                );
-            }
+        if cfg!(windows) {
+            appdata_init()?;
+            Ok(Self {
+                // program: AppData/unlustig-rs/gifsicle.rs
+                exe: PathBuf::from(env::var("APPDATA")?)
+                    .join("unlustig-rs")
+                    .join("gifsicle.exe"),
+            })
+        } else {
+            Ok(Self {
+                exe: PathBuf::new(),
+            })
         }
-
-        Ok(Self {
-            // program: AppData/unlustig-rs/gifsicle.rs
-            exe: appdata.join("gifsicle.exe"),
-        })
     }
 
     ///
@@ -129,6 +115,8 @@ pub fn process_gif(
     let opt = cli.opt_level().map(std::borrow::ToOwned::to_owned);
     let lossy = cli.lossy();
     let reduce = cli.reduce();
-    Gifsicle::init()?.run(opt, lossy, reduce, &file_out_path)?;
+    Gifsicle::init()
+        .context("Gifsicle not found. If using Unix, please install and add it to your path!")?
+        .run(opt, lossy, reduce, &file_out_path)?;
     Ok(())
 }
