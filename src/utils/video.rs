@@ -1,8 +1,39 @@
-use std::path::Path;
+use std::{
+    env,
+    path::{Path, PathBuf},
+};
 
 use anyhow::{Context, Result};
 
 use crate::error::ErrorKind;
+
+use super::appdata_init;
+
+pub struct FFmpeg {
+    exe: PathBuf,
+    input: PathBuf
+}
+
+impl FFmpeg {
+    pub fn init(input: PathBuf) -> Result<Self> {
+        if cfg!(windows) {
+            appdata_init()?;
+            Ok(Self {
+                exe: PathBuf::from(env::var("APPDATA")?)
+                    .join("unlustig-rs")
+                    .join("ffmpeg.exe"),
+                input,
+            })
+        } else {
+            Ok(Self {
+                exe: PathBuf::new(),
+                input
+            })
+        }
+    }
+}
+
+
 
 pub enum MediaTypes {
     Mp4,
