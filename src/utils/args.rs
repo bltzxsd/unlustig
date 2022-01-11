@@ -82,14 +82,22 @@ impl Cli {
     }
 
     pub fn name(&self) -> String {
+        let (_, ty) = &self.media().expect("no media found");
+        let ext = match ty {
+            MediaType::Mp4 => ".mp4",
+            MediaType::Avi => ".avi",
+            MediaType::Mkv => ".mkv",
+            MediaType::Webm => ".webm",
+            MediaType::Gif => ".gif",
+        };
         match &self.output_name {
             Some(string) => {
-                if !string.contains(".gif") {
-                    return format!("{}.gif", string);
+                if string.contains(ext) {
+                    return format!("{}{}", string, ext);
                 }
-                string.to_string()
+                string.to_owned()
             }
-            None => format!("{}.gif", random_name()),
+            None => format!("{}{}", random_name(), ext),
         }
     }
 
