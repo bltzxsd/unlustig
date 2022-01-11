@@ -107,6 +107,13 @@ impl TextImage {
         t_width: u32,
         image_h: u32,
     ) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+        // rounding up because ffmpeg doesnt
+        // play well with non-even numbers in resolutions
+        let image_h = if image_h % 2 != 0 {
+            image_h + 1
+        } else {
+            image_h
+        };
         image::imageops::resize(
             image,
             Self::npercent(image.width(), t_width),
