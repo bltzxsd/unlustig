@@ -1,17 +1,10 @@
-use std::{
-    fs::{File, OpenOptions},
-    io::Write,
-    iter,
-    path::PathBuf,
-};
+use std::path::PathBuf;
 
-use crate::error::ErrorKind;
+use crate::utils::video::validate_format;
 use anyhow::{Context, Result};
 use clap::{Parser, ValueHint};
-use rand::{distributions::Alphanumeric, thread_rng, Rng};
 
-#[cfg(windows)]
-use log::{info, warn};
+use super::{image::random_name, video::MediaType};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
@@ -22,13 +15,12 @@ pub struct Cli {
     #[clap(
         short = 'G',
         long,
-        help = "Path to the GIF file",
-        value_name = "Path to GIF",
+        help = "Path to the media file",
         parse(from_os_str),
         value_hint = ValueHint::FilePath,
         required = true
     )]
-    gif: PathBuf,
+    media: PathBuf,
 
     #[clap(
         short = 'o',
@@ -60,83 +52,51 @@ pub struct Cli {
         long,
         help = "Determines how lossy you want the GIF to be.\nHigher values result in smaller file sizes.\nPowered by Gifsicle",
         possible_values = ["20", "40", "60", "80"],
-        requires = "optimization"
     )]
-    lossy: Option<String>,
+    lossy: Option<u32>,
 
     #[clap(
         short = 'r',
         long,
-        help = "Reduce the number of distinct colors in each output GIF\nPowered by Gifsicle",
-        requires = "optimization"
+        help = "Reduce the number of distinct colors in each output GIF\nPowered by Gifsicle"
     )]
     reduce: bool,
 }
 
 impl Cli {
-    pub fn compress(&self) -> Result<(PathBuf, String)> {
-        // this is an exteremely dumb hack of including an exe
-        // temporary hack until I figure out how to bundle another exe with wix
-        let compression = match &self.optimization {
-            Some(value) => format!("-{}", value),
-            None => return Err(anyhow::Error::new(ErrorKind::InvalidOptimization)),
-        };
-
-        #[cfg(windows)]
-        {
-            let gifsicle = include_bytes!("../../gifsicle/gifsicle.exe");
-            let appdata = PathBuf::from(std::env::var("APPDATA")?).join("unlustig-rs");
-            if !appdata.exists() {
-                warn!("{} does not exist. Creating...", appdata.display());
-                std::fs::create_dir(&appdata)?;
-                let exe = appdata.join("gifsicle.exe");
-                if !exe.exists() {
-                    let mut sicle = std::fs::File::create(exe)?;
-                    sicle.write_all(gifsicle)?;
-                    info!(
-                        "Wrote gifsicle.exe to {}",
-                        appdata.join("gifsicle.exe").display()
-                    );
-                }
-            }
-            Ok((appdata, compression))
-        }
-        #[cfg(unix)]
-        Ok((PathBuf::new(), compression))
+    pub fn opt_level(&self) -> Option<&String> {
+        self.optimization.as_ref()
     }
 
     pub fn reduce(&self) -> bool {
         self.reduce
     }
 
-    pub fn gif(&self) -> Result<File> {
-        if self
-            .gif
-            .extension()
-            .context("could not get the input file's extension")?
-            != "gif"
-        {
-            return Err(anyhow::Error::from(ErrorKind::InvalidGIF));
-        }
-        OpenOptions::new()
-            .read(true)
-            .open(&self.gif)
-            .context("could not read gif")
+    pub fn media(&self) -> Result<(PathBuf, MediaType)> {
+        Ok((self.media.clone(), validate_format(&self.media)?))
     }
 
-    pub fn lossy(&self) -> Option<&String> {
-        self.lossy.as_ref()
+    pub fn lossy(&self) -> Option<u32> {
+        self.lossy
     }
 
     pub fn name(&self) -> String {
+        let (_, ty) = &self.media().expect("no media found");
+        let ext = match ty {
+            MediaType::Mp4 => ".mp4",
+            MediaType::Avi => ".avi",
+            MediaType::Mkv => ".mkv",
+            MediaType::Webm => ".webm",
+            MediaType::Gif => ".gif",
+        };
         match &self.output_name {
             Some(string) => {
-                if !string.contains(".gif") {
-                    return format!("{}.gif", string);
+                if string.contains(ext) {
+                    return format!("{}{}", string, ext);
                 }
-                string.to_string()
+                string.to_owned()
             }
-            None => format!("{}.gif", random_name()),
+            None => format!("{}{}", random_name(), ext),
         }
     }
 
@@ -151,7 +111,7 @@ impl Cli {
                 .join("Pictures"));
                 #[cfg(unix)]
                 return Ok(PathBuf::from(std::env::current_dir().context(
-                    "lacking permissions for current dir or curr dir is invalid",
+                    "Current directory is invalid or lacking permissions for access.",
                 )?));
             }
         }
@@ -160,13 +120,4 @@ impl Cli {
     pub fn text(&self) -> &str {
         self.caption.trim()
     }
-}
-
-fn random_name() -> String {
-    let mut rng = thread_rng();
-    iter::repeat(())
-        .map(|()| rng.sample(Alphanumeric))
-        .map(char::from)
-        .take(5)
-        .collect()
 }

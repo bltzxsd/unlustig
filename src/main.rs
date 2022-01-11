@@ -1,20 +1,17 @@
 #![windows_subsystem = "windows"]
 
-use std::fs::File;
+use std::fs::OpenOptions;
 
 use anyhow::{Context, Result};
-use colored::Colorize;
-use image::{
-    gif::{GifDecoder, GifEncoder},
-    AnimationDecoder, GenericImage, ImageDecoder, RgbaImage,
-};
+
 use klask::Settings;
 use log::{error, info};
-use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
+
 use rusttype::Font;
 use utils::{
     args::Cli,
-    image::{compress_gif, SetUp, TextImage},
+    gif::process_gif,
+    video::{FFmpeg, MediaType},
 };
 
 mod error;
@@ -39,52 +36,17 @@ fn run(cli: &Cli) -> Result<()> {
     let font = Font::try_from_bytes(include_bytes!("../font/ifunny.otf"))
         .context("font could not be read")?;
 
-    let (gif, text, out_path, name) = (cli.gif()?, cli.text(), cli.output()?, cli.name());
+    let (text, out_path, name) = (cli.text(), cli.output()?, cli.name());
 
-    let decoder = GifDecoder::new(gif)?;
-    let (gif_w, gif_h) = decoder.dimensions();
-
-    let init = SetUp::init(font).with_dimensions(gif_w, gif_h);
-    info!("Creating caption image..");
-
-    let image = TextImage::new(init, text).render()?;
-    info!("{}", "Caption image created!".green());
-
-    let mut frames = decoder.into_frames().collect_frames()?;
-    info!("{}", "Rendering GIF...".blue());
-
-    frames.par_iter_mut().for_each(|f| {
-        let f = f.buffer_mut();
-        let mut buffer = RgbaImage::new(gif_w, gif_h + image.height());
-
-        buffer
-            .copy_from(&image, 0, 0)
-            .expect("could not copy buffer");
-
-        buffer
-            .copy_from(f, 0, image.height())
-            .expect("could not copy buffer");
-
-        *f = buffer;
-    });
-
-    let file_out = File::create(&out_path.join(&name))?;
-    let file_out_path = out_path.join(&name);
-    let mut encoder = GifEncoder::new_with_speed(&file_out, 30);
-    encoder.set_repeat(image::gif::Repeat::Infinite)?;
-    encoder.encode_frames(frames)?;
-
-    info!(
-        "GIF: {} {} at {}",
-        &name,
-        "generated".green(),
-        out_path.to_str().expect("invalid output path"),
-    );
-
-    if let Ok((appdata, level)) = cli.compress() {
-        info!("Optimization is enabled. Optimizing GIF..");
-        compress_gif(&appdata, &level, &file_out_path, cli.lossy(), cli.reduce())?;
-        info!("GIF optimization may take some time. The optimization will be complete when the terminal window closes.")
+    if let Ok((file_path, file_ty)) = cli.media() {
+        let file = OpenOptions::new().read(true).open(&file_path)?;
+        match file_ty {
+            MediaType::Mp4 | MediaType::Avi | MediaType::Mkv | MediaType::Webm => {
+                info!("Note: Optimization flags do not work on media files.");
+                FFmpeg::init(file_path)?.process_media(font, text, &out_path, &name)?;
+            }
+            MediaType::Gif => process_gif(file, font, text, &out_path, &name, cli)?,
+        }
     }
 
     #[cfg(windows)]
