@@ -40,7 +40,7 @@ impl SetUp {
 
 pub struct TextImage {
     init: SetUp,
-    strings: Vec<String>,
+    text: Vec<String>,
 }
 
 impl TextImage {
@@ -53,24 +53,24 @@ impl TextImage {
 
         let scale = init.scale();
 
-        let strings = Self::wrap_text(
+        let text = Self::wrap_text(
             &Self::sum_until_fit(scale, init.font(), init.gif_w as i32, &split_texts),
             &split_texts,
         );
 
-        Self { init, strings }
+        Self { init, text }
     }
 
     pub fn render(self) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>> {
-        let single = self.strings.len() == 1;
+        let single = self.text.len() == 1;
 
         let image = if single {
             // this is fine because there is only one element
             // and so we do not need to concatenate images.
-            self.render_text(&self.strings[0], single)
+            self.render_text(&self.text[0], single)
         } else {
             let images: Vec<_> = self
-                .strings
+                .text
                 .par_iter()
                 .map(|text| self.render_text(text, single))
                 .collect();
@@ -78,8 +78,8 @@ impl TextImage {
         };
 
         let image_h = image.height();
-        let image = Self::set_bg(&image, self.init.gif_w)?;
-        Ok(Self::resize(image, self.init.gif_w, image_h as _))
+        let image = Self::set_bg(&image, self.init.gif_w);
+        Ok(Self::resize(&image, self.init.gif_w, image_h as _))
     }
 
     fn render_text(&self, text: &str, single: bool) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
@@ -102,12 +102,12 @@ impl TextImage {
     }
 
     fn resize(
-        image: ImageBuffer<Rgba<u8>, Vec<u8>>,
+        image: &ImageBuffer<Rgba<u8>, Vec<u8>>,
         t_width: u32,
         image_h: u32,
     ) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
         image::imageops::resize(
-            &image,
+            image,
             Self::npercent(image.width(), t_width),
             image_h as _,
             image::imageops::FilterType::Gaussian,
@@ -117,7 +117,7 @@ impl TextImage {
     fn set_bg(
         buffer: &ImageBuffer<Rgba<u8>, Vec<u8>>,
         gif_w: u32,
-    ) -> Result<ImageBuffer<Rgba<u8>, Vec<u8>>> {
+    ) -> image::ImageBuffer<image::Rgba<u8>, std::vec::Vec<u8>> {
         let mut bg = blank_buffer_new(gif_w, buffer.height() as _);
 
         let (x, y) = {
@@ -127,7 +127,7 @@ impl TextImage {
         };
 
         image::imageops::overlay(&mut bg, buffer, x as _, y as _);
-        Ok(bg)
+        bg
     }
 
     fn v_concat<I, P, S>(images: &[I]) -> Result<ImageBuffer<P, Vec<S>>>
