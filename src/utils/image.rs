@@ -1,8 +1,9 @@
-use std::cmp::Ordering;
+use std::{cmp::Ordering, iter};
 
 use anyhow::Result;
 use image::{GenericImage, GenericImageView, ImageBuffer, Pixel, Primitive, Rgba, RgbaImage};
 use imageproc::drawing::{draw_text_mut, text_size};
+use rand::{thread_rng, distributions::Alphanumeric, Rng};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rusttype::{Font, Scale};
 
@@ -224,4 +225,13 @@ fn blank_buffer_new(w: u32, h: u32) -> RgbaImage {
         px.0 = [255, 255, 255, 255];
     }
     image
+}
+
+pub fn random_name() -> String {
+    let mut rng = thread_rng();
+    iter::repeat(())
+        .map(|()| rng.sample(Alphanumeric))
+        .map(char::from)
+        .take(5)
+        .collect()
 }

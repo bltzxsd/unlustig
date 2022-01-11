@@ -1,13 +1,13 @@
 use std::{
     fs::{File, OpenOptions},
-    iter,
     path::PathBuf,
 };
 
 use crate::utils::video::validate_format;
 use anyhow::{Context, Result};
 use clap::{Parser, ValueHint};
-use rand::{distributions::Alphanumeric, thread_rng, Rng};
+
+use super::image::random_name;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
@@ -122,11 +122,4 @@ impl Cli {
     }
 }
 
-fn random_name() -> String {
-    let mut rng = thread_rng();
-    iter::repeat(())
-        .map(|()| rng.sample(Alphanumeric))
-        .map(char::from)
-        .take(5)
-        .collect()
-}
+
