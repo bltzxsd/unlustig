@@ -15,8 +15,7 @@ pub struct Cli {
     #[clap(
         short = 'G',
         long,
-        help = "Path to the GIF file",
-        value_name = "Path to GIF",
+        help = "Path to the media file",
         parse(from_os_str),
         value_hint = ValueHint::FilePath,
         required = true
