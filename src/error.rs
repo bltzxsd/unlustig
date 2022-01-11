@@ -1,10 +1,8 @@
 use thiserror::Error;
 
-#[derive(Error, Clone, Copy, Debug)]
+#[derive(Error, Clone, Debug)]
 pub enum ErrorKind {
     // The supplied file was not a gif
-    #[error("not a gif")]
-    InvalidGIF,
-    #[error("invalid optimization")]
-    InvalidOptimization,
+    #[error("unsupported media format: {0}")]
+    UnsupportedMediaFormat(String),
 }
