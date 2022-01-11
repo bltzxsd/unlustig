@@ -14,8 +14,10 @@ use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use rusttype::Font;
 use utils::{
     args::Cli,
-    image::{compress_gif, SetUp, TextImage},
+    image::{SetUp, TextImage},
 };
+
+use crate::utils::gif::Gifsicle;
 
 mod error;
 mod utils;
@@ -29,23 +31,23 @@ fn main() {
     };
 
     klask::run_derived::<Cli, _>(settings, |cli| {
-        if let Err(e) = run(&cli) {
+        if let Err(e) = run(cli) {
             error!("{:?}", e);
         }
     });
 }
 
-fn run(cli: &Cli) -> Result<()> {
+fn run(cli: Cli) -> Result<()> {
     let font = Font::try_from_bytes(include_bytes!("../font/ifunny.otf"))
         .context("font could not be read")?;
 
-    let (gif, text, out_path, name) = (cli.gif()?, cli.text(), cli.output()?, cli.name());
+    let (gif, text, out_path, name) = (cli.media()?, cli.text(), cli.output()?, cli.name());
 
     let decoder = GifDecoder::new(gif)?;
     let (gif_w, gif_h) = decoder.dimensions();
 
     let init = SetUp::init(font).with_dimensions(gif_w, gif_h);
-    info!("Creating caption image..");
+    info!("Creating caption image...");
 
     let image = TextImage::new(init, text).render()?;
     info!("{}", "Caption image created!".green());
@@ -81,11 +83,11 @@ fn run(cli: &Cli) -> Result<()> {
         out_path.to_str().expect("invalid output path"),
     );
 
-    if let Ok((appdata, level)) = cli.compress() {
-        info!("Optimization is enabled. Optimizing GIF..");
-        compress_gif(&appdata, &level, &file_out_path, cli.lossy(), cli.reduce())?;
-        info!("GIF optimization may take some time. The optimization will be complete when the terminal window closes.")
-    }
+    let opt = cli.opt_level().map(|str| str.to_owned());
+    let lossy = cli.lossy();
+    let reduce = cli.reduce();
+    // run doesnt work if there are no optimizations enabled
+    Gifsicle::init()?.run(opt, lossy, reduce, file_out_path)?;
 
     #[cfg(windows)]
     std::process::Command::new("explorer.exe")
