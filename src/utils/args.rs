@@ -1,13 +1,10 @@
-use std::{
-    fs::{File, OpenOptions},
-    path::PathBuf,
-};
+use std::path::PathBuf;
 
 use crate::utils::video::validate_format;
 use anyhow::{Context, Result};
 use clap::{Parser, ValueHint};
 
-use super::image::random_name;
+use super::{image::random_name, video::MediaType};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
@@ -24,7 +21,7 @@ pub struct Cli {
         value_hint = ValueHint::FilePath,
         required = true
     )]
-    gif: PathBuf,
+    media: PathBuf,
 
     #[clap(
         short = 'o',
@@ -76,12 +73,8 @@ impl Cli {
         self.reduce
     }
 
-    pub fn media(&self) -> Result<File> {
-        validate_format(&self.gif)?;
-        OpenOptions::new()
-            .read(true)
-            .open(&self.gif)
-            .context("could not read gif")
+    pub fn media(&self) -> Result<(PathBuf, MediaType)> {
+        Ok((self.media.clone(), validate_format(&self.media)?))
     }
 
     pub fn lossy(&self) -> Option<u32> {
@@ -121,5 +114,3 @@ impl Cli {
         self.caption.trim()
     }
 }
-
-
