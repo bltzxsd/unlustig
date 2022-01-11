@@ -33,11 +33,14 @@ cargo build --release
 ## Dependencies
 
 * gifsicle
+* FFmpeg 
 
 Gifsicle is used for GIF compression. 
 
-It is already packaged in the Windows executable. 
-Linux users, if using compression, *must* have [gifsicle](https://www.lcdf.org/gifsicle/) installed and on their PATH.
+FFmpeg is used for video processing.
+
+Both of them are already packaged in the Windows executable. 
+Linux users, if using optimization flags or mp4, *must* have [gifsicle](https://www.lcdf.org/gifsicle/) and [FFmpeg](https://www.ffmpeg.org/) installed and on their PATH.
 
 ## License 
-This repository is covered under the MIT license
+This repository is covered under the MIT license.
