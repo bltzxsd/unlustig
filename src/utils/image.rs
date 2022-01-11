@@ -3,7 +3,7 @@ use std::{cmp::Ordering, iter};
 use anyhow::Result;
 use image::{GenericImage, GenericImageView, ImageBuffer, Pixel, Primitive, Rgba, RgbaImage};
 use imageproc::drawing::{draw_text_mut, text_size};
-use rand::{thread_rng, distributions::Alphanumeric, Rng};
+use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rusttype::{Font, Scale};
 
