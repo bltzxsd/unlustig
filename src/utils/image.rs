@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, path::Path};
+use std::cmp::Ordering;
 
 use anyhow::Result;
 use image::{GenericImage, GenericImageView, ImageBuffer, Pixel, Primitive, Rgba, RgbaImage};
@@ -224,61 +224,4 @@ fn blank_buffer_new(w: u32, h: u32) -> RgbaImage {
         px.0 = [255, 255, 255, 255];
     }
     image
-}
-
-pub fn compress_gif(
-    appdata: &Path,
-    level: &str,
-    filepath: &Path,
-    lossy: Option<&String>,
-    reduce: bool,
-) -> Result<(), anyhow::Error> {
-    let exe = if cfg!(windows) {
-        "gifsicle.exe"
-    } else {
-        "gifsicle"
-    };
-    let mut command = std::process::Command::new(appdata.join(exe));
-    enable_lossy(lossy, reduce, &mut command, level, filepath)?;
-    Ok(())
-}
-
-fn enable_lossy(
-    lossy: Option<&String>,
-    reduce: bool,
-    command: &mut std::process::Command,
-    level: &str,
-    filepath: &Path,
-) -> Result<(), anyhow::Error> {
-    match lossy {
-        Some(lossy) if reduce => {
-            command
-                .arg("-b")
-                .args([level, filepath.to_str().expect("cannot convert to &str")])
-                .arg(format!("--lossy={}", lossy))
-                .args(&["--colors", "256"])
-                .spawn()?
-        }
-        Some(lossy) => {
-            command
-                .arg("-b")
-                .args([level, filepath.to_str().expect("cannot convert to &str")])
-                .arg(format!("--lossy={}", lossy))
-                .spawn()?
-        }
-        None if reduce => {
-            command
-                .arg("-b")
-                .args([level, filepath.to_str().expect("cannot convert to &str")])
-                .args(["--colors", "256"])
-                .spawn()?
-        }
-        None => {
-            command
-                .arg("-b")
-                .args([level, filepath.to_str().expect("cannot convert to &str")])
-                .spawn()?
-        }
-    };
-    Ok(())
 }
