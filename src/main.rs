@@ -1,12 +1,18 @@
 #![windows_subsystem = "windows"]
 
+use std::fs::OpenOptions;
+
 use anyhow::{Context, Result};
 
 use klask::Settings;
 use log::error;
 
 use rusttype::Font;
-use utils::{args::Cli, gif::process_gif};
+use utils::{
+    args::Cli,
+    gif::process_gif,
+    video::{FFmpeg, MediaType},
+};
 
 mod error;
 mod utils;
@@ -30,9 +36,17 @@ fn run(cli: &Cli) -> Result<()> {
     let font = Font::try_from_bytes(include_bytes!("../font/ifunny.otf"))
         .context("font could not be read")?;
 
-    let (media, text, out_path, name) = (cli.media()?, cli.text(), cli.output()?, cli.name());
+    let (text, out_path, name) = (cli.text(), cli.output()?, cli.name());
 
-    process_gif(media, font, text, &out_path, &name, cli)?;
+    if let Ok((file_path, file_ty)) = cli.media() {
+        let file = OpenOptions::new().read(true).open(&file_path)?;
+        match file_ty {
+            MediaType::Mp4 | MediaType::Avi | MediaType::Mkv | MediaType::Webm => {
+                let mut ffmpeg = FFmpeg::init(file_path)?.process_media(font, text, &out_path, &name);
+            }
+            MediaType::Gif => process_gif(file, font, text, &out_path, &name, cli)?,
+        }
+    }
 
     #[cfg(windows)]
     std::process::Command::new("explorer.exe")
