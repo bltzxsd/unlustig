@@ -1,17 +1,13 @@
 use std::{
     fs::{File, OpenOptions},
-    io::Write,
     iter,
     path::PathBuf,
 };
 
-use crate::error::ErrorKind;
+use crate::utils::video::validate_format;
 use anyhow::{Context, Result};
 use clap::{Parser, ValueHint};
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
-
-#[cfg(windows)]
-use log::{info, warn};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
@@ -60,72 +56,36 @@ pub struct Cli {
         long,
         help = "Determines how lossy you want the GIF to be.\nHigher values result in smaller file sizes.\nPowered by Gifsicle",
         possible_values = ["20", "40", "60", "80"],
-        requires = "optimization"
     )]
-    lossy: Option<String>,
+    lossy: Option<u32>,
 
     #[clap(
         short = 'r',
         long,
-        help = "Reduce the number of distinct colors in each output GIF\nPowered by Gifsicle",
-        requires = "optimization"
+        help = "Reduce the number of distinct colors in each output GIF\nPowered by Gifsicle"
     )]
     reduce: bool,
 }
 
 impl Cli {
-    pub fn compress(&self) -> Result<(PathBuf, String)> {
-        // this is an exteremely dumb hack of including an exe
-        // temporary hack until I figure out how to bundle another exe with wix
-        let compression = match &self.optimization {
-            Some(value) => format!("-{}", value),
-            None => return Err(anyhow::Error::new(ErrorKind::InvalidOptimization)),
-        };
-
-        #[cfg(windows)]
-        {
-            let gifsicle = include_bytes!("../../gifsicle/gifsicle.exe");
-            let appdata = PathBuf::from(std::env::var("APPDATA")?).join("unlustig-rs");
-            if !appdata.exists() {
-                warn!("{} does not exist. Creating...", appdata.display());
-                std::fs::create_dir(&appdata)?;
-                let exe = appdata.join("gifsicle.exe");
-                if !exe.exists() {
-                    let mut sicle = std::fs::File::create(exe)?;
-                    sicle.write_all(gifsicle)?;
-                    info!(
-                        "Wrote gifsicle.exe to {}",
-                        appdata.join("gifsicle.exe").display()
-                    );
-                }
-            }
-            Ok((appdata, compression))
-        }
-        #[cfg(unix)]
-        Ok((PathBuf::new(), compression))
+    pub fn opt_level(&self) -> Option<&String> {
+        self.optimization.as_ref()
     }
 
     pub fn reduce(&self) -> bool {
         self.reduce
     }
 
-    pub fn gif(&self) -> Result<File> {
-        if self
-            .gif
-            .extension()
-            .context("could not get the input file's extension")?
-            != "gif"
-        {
-            return Err(anyhow::Error::from(ErrorKind::InvalidGIF));
-        }
+    pub fn media(&self) -> Result<File> {
+        validate_format(&self.gif)?;
         OpenOptions::new()
             .read(true)
             .open(&self.gif)
             .context("could not read gif")
     }
 
-    pub fn lossy(&self) -> Option<&String> {
-        self.lossy.as_ref()
+    pub fn lossy(&self) -> Option<u32> {
+        self.lossy
     }
 
     pub fn name(&self) -> String {
@@ -151,7 +111,7 @@ impl Cli {
                 .join("Pictures"));
                 #[cfg(unix)]
                 return Ok(PathBuf::from(std::env::current_dir().context(
-                    "lacking permissions for current dir or curr dir is invalid",
+                    "Current directory is invalid or lacking permissions for access.",
                 )?));
             }
         }
