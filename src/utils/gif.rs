@@ -48,7 +48,12 @@ impl Gifsicle {
         reduce: bool,
         imagepath: &Path,
     ) -> Result<()> {
-        let mut args = vec!["-b".into(), imagepath.display().to_string()];
+        let mut args = vec![
+            "--no-conserve-memory".into(),
+            "-w".into(),
+            "-b".into(),
+            imagepath.display().to_string(),
+        ];
         if let Some(v) = opt {
             args.push(format!("-{}", v));
         }
@@ -60,7 +65,7 @@ impl Gifsicle {
             args.push("256".into());
         }
         // No optimization called for.
-        if args.len() == 2 {
+        if args.len() == 4 {
             return Ok(());
         }
         info!("Optimization is enabled. Optimizing GIF...");
