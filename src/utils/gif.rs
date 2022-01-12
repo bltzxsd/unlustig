@@ -107,22 +107,58 @@ pub fn process_gif(
 
         *f = buffer;
     });
-    let file_out = File::create(&out_path.join(&name))?;
-    let file_out_path = out_path.join(&name);
-    let mut encoder = GifEncoder::new_with_speed(&file_out, 30);
+
+    let (output, output_path) = file_and_path(out_path, name, overwrite)?;
+
+    let mut encoder = GifEncoder::new_with_speed(&output, 30);
     encoder.set_repeat(image::gif::Repeat::Infinite)?;
     encoder.encode_frames(frames)?;
+    let outputname = &output_path
+        .file_name()
+        .context("output file path does not exist.")?
+        .to_str()
+        .context("output-name was not valid utf-8")?;
+
     info!(
         "GIF: {} {} at {}",
-        &name,
+        outputname,
         "generated".green(),
-        out_path.to_str().expect("invalid output path"),
+        out_path
+            .to_str()
+            .context("invalid output path (not utf-8)")?,
     );
     let opt = cli.opt_level().map(std::borrow::ToOwned::to_owned);
     let lossy = cli.lossy();
     let reduce = cli.reduce();
     Gifsicle::init()
         .context("Gifsicle not found. If using Unix, please install and add it to your path!")?
-        .run(opt, lossy, reduce, &file_out_path)?;
+        .run(opt, lossy, reduce, &output_path)?;
     Ok(())
+}
+
+fn file_and_path(
+    out_path: &Path,
+    name: &str,
+    overwrite: bool,
+) -> Result<(File, PathBuf), anyhow::Error> {
+    let default = |file_name| -> Result<(File, PathBuf), anyhow::Error> {
+        Ok((
+            File::create(&out_path.join(&file_name))?,
+            out_path.join(&file_name),
+        ))
+    };
+
+    let (output, output_path) = if out_path.join(&name).exists() {
+        if overwrite {
+            info!("Overwrite is enabled. Any file with the same name ({}) will be overwritten by the output file", &name);
+            default(name)?
+        } else {
+            warn!("Overwrite is disabled. File with a similar name found. Modifying name.");
+            let x = format!("{}_{}", random_name(), &name);
+            default(&x)?
+        }
+    } else {
+        default(name)?
+    };
+    Ok((output, output_path))
 }
