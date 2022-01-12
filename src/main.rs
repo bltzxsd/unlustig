@@ -60,16 +60,17 @@ fn run(cli: &Cli) -> Result<()> {
     let font = Font::try_from_bytes(include_bytes!("../font/ifunny.otf"))
         .context("font could not be read")?;
 
-    let (text, out_path, name) = (cli.text(), cli.output()?, cli.name());
+    let (text, out_path, name, overwrite) =
+        (cli.text(), cli.output()?, cli.name(), cli.overwrites());
 
     if let Ok((file_path, file_ty)) = cli.media() {
         let file = OpenOptions::new().read(true).open(&file_path)?;
         match file_ty {
             MediaType::Mp4 | MediaType::Avi | MediaType::Mkv | MediaType::Webm => {
                 info!("Note: Optimization flags do not work on media files.");
-                FFmpeg::init(file_path)?.process_media(font, text, &out_path, &name)?;
+                FFmpeg::init(file_path)?.process_media(font, text, &out_path, &name, overwrite)?;
             }
-            MediaType::Gif => process_gif(file, font, text, &out_path, &name, cli)?,
+            MediaType::Gif => process_gif(file, font, text, &out_path, &name, cli, overwrite)?,
         }
     }
 

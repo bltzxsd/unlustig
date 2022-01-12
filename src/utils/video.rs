@@ -7,7 +7,7 @@ use std::{
 use anyhow::{Context, Result};
 use colored::Colorize;
 use image::GenericImageView;
-use log::info;
+use log::{info, warn};
 use rusttype::Font;
 
 use crate::{
@@ -78,6 +78,7 @@ impl FFmpeg {
         text: &str,
         out_path: &Path,
         name: &str,
+        overwrite: bool,
     ) -> Result<()> {
         let (width, height) = self.dimensions()?;
         let init = SetUp::init(font).with_dimensions(width, height);

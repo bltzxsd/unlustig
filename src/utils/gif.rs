@@ -11,11 +11,11 @@ use image::{
     gif::{GifDecoder, GifEncoder},
     AnimationDecoder, GenericImage, ImageDecoder, RgbaImage,
 };
-use log::info;
+use log::{info, warn};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use rusttype::Font;
 
-use crate::utils::image::{SetUp, TextImage};
+use crate::utils::image::{random_name, SetUp, TextImage};
 
 use super::{appdata_init, args::Cli};
 
@@ -83,6 +83,7 @@ pub fn process_gif(
     out_path: &Path,
     name: &str,
     cli: &Cli,
+    overwrite: bool,
 ) -> Result<(), anyhow::Error> {
     let decoder = GifDecoder::new(gif)?;
     let (gif_w, gif_h) = decoder.dimensions();
