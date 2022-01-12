@@ -62,3 +62,19 @@ fn run(cli: &Cli) -> Result<()> {
 
     Ok(())
 }
+
+#[cfg(unix)]
+enum ProgramMode {
+    Cli,
+    Gui,
+}
+
+#[cfg(unix)]
+impl ProgramMode {
+    pub fn check() -> Self {
+        if std::env::args().len() > 1 {
+            return ProgramMode::Cli;
+        }
+        ProgramMode::Gui
+    }
+}
