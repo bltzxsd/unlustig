@@ -15,7 +15,7 @@ pub struct Cli {
     #[clap(
         short = 'G',
         long,
-        help = "Path to the media file",
+        help = "Path to the media file.",
         parse(from_os_str),
         value_hint = ValueHint::FilePath,
         required = true
@@ -25,7 +25,7 @@ pub struct Cli {
     #[clap(
         short = 'o',
         long,
-        help = "Set the location of the output file\n\nDefaults:\n\tOn Windows: User\\Pictures\\\n\tOn Unix   : Current directory",
+        help = "Set the location of the output file.\n\nDefaults:\n\tOn Windows: User\\Pictures\\\n\tOn Unix   : Current directory",
         value_name = "Output Directory",
         parse(from_os_str),
         value_hint = ValueHint::DirPath
@@ -35,21 +35,21 @@ pub struct Cli {
     #[clap(
         short = 'n',
         long,
-        help = "Set the name of the output file\n\nDefault: generates a random alphanumeric name"
+        help = "Set the name of the output file.\n\nDefault: generates a random alphanumeric name"
     )]
     output_name: Option<String>,
 
     #[clap(
         short = 'f',
         long,
-        help = "Force overwrites the output file if one already exists."
+        help = "Force overwrite the output file if one already exists.\n\nNote: if the output and input videos have the same name,\nthe input will not be overwritten."
     )]
     force_overwrite: bool,
 
     #[clap(
         short = 'z',
         long,
-        help = "Optimizes the output GIF\nCompression and processing time increases with higher values.\nPowered by Gifsicle (https://github.com/kohler/gifsicle) much <3",
+        help = "Optimize the output GIF.\n\nNote: Compression and processing time increases with higher values.\nPowered by Gifsicle (https://github.com/kohler/gifsicle) much <3",
         possible_values = ["O1", "O2", "O3"],
     )]
     optimization: Option<String>,
@@ -57,7 +57,7 @@ pub struct Cli {
     #[clap(
         short = 'l',
         long,
-        help = "Determines how lossy you want the GIF to be.\nHigher values result in smaller file sizes.\nPowered by Gifsicle",
+        help = "Determines how lossy you want the GIF to be.\n\nHigher values result in smaller file sizes.\nPowered by Gifsicle",
         possible_values = ["20", "40", "60", "80"],
     )]
     lossy: Option<u32>,
@@ -65,7 +65,7 @@ pub struct Cli {
     #[clap(
         short = 'r',
         long,
-        help = "Reduce the number of distinct colors in each output GIF\nPowered by Gifsicle"
+        help = "Reduce the number of distinct colors in each output GIF.\nPowered by Gifsicle"
     )]
     reduce: bool,
 }
