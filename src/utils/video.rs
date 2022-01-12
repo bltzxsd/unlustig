@@ -94,7 +94,8 @@ impl FFmpeg {
         // ffmpeg.exe -i .\cat.mp4 -i .\caption.jpg \
         // -filter_complex "[0:v]pad=640:788:0:148[a];[a][1:v]overlay=0:0,setsar=1"
         // -c:a copy output.mp4
-        let base_args = ["-hide_banner", "-loglevel", "error"];
+        let mut base_args = vec!["-hide_banner", "-loglevel", "error"];
+
         let input_args = [
             "-i",
             self.input.to_str().context("cannot convert to str")?,
@@ -112,7 +113,19 @@ impl FFmpeg {
                 caption_height
             ),
         ];
-        let output = out_path.join(name);
+
+        let output = if out_path.join(name).exists() {
+            if overwrite {
+                info!("Overwrite is enabled. Any file with the same name ({}) will be overwritten by the output file.", name);
+                base_args.push("-y");
+                out_path.join(name)
+            } else {
+                warn!("Overwrite is disabled. File with similar name found. Modifying name.");
+                out_path.join(format!("{}-{}", random_name(), name))
+            }
+        } else {
+            out_path.join(name)
+        };
 
         let end_args = [
             "-c:a",
