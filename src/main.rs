@@ -20,16 +20,40 @@ mod utils;
 fn main() {
     pretty_env_logger::init();
 
-    let settings = Settings {
-        custom_font: Some(include_bytes!("../font/mononoki-Regular.ttf")),
-        ..Settings::default()
-    };
-
-    klask::run_derived::<Cli, _>(settings, |cli| {
-        if let Err(e) = run(&cli) {
-            error!("{:?}", e);
+    #[cfg(unix)]
+    match ProgramMode::check() {
+        ProgramMode::Cli => {
+            if let Err(err) = run(&<Cli as clap::StructOpt>::parse()) {
+                error!("{:?}", err);
+            }
         }
-    });
+        ProgramMode::Gui => {
+            let settings = Settings {
+                custom_font: Some(include_bytes!("../font/mononoki-Regular.ttf")),
+                ..Settings::default()
+            };
+
+            klask::run_derived::<Cli, _>(settings, |cli| {
+                if let Err(err) = run(&cli) {
+                    error!("{:?}", err);
+                }
+            });
+        }
+    }
+
+    #[cfg(windows)]
+    {
+        let settings = Settings {
+            custom_font: Some(include_bytes!("../font/mononoki-Regular.ttf")),
+            ..Settings::default()
+        };
+
+        klask::run_derived::<Cli, _>(settings, |cli| {
+            if let Err(err) = run(&cli) {
+                error!("{:?}", err);
+            }
+        });
+    }
 }
 
 fn run(cli: &Cli) -> Result<()> {
