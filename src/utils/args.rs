@@ -40,6 +40,13 @@ pub struct Cli {
     output_name: Option<String>,
 
     #[clap(
+        short = 'f',
+        long,
+        help = "Force overwrites the output file if one already exists."
+    )]
+    force_overwrite: bool,
+
+    #[clap(
         short = 'z',
         long,
         help = "Optimizes the output GIF\nCompression and processing time increases with higher values.\nPowered by Gifsicle (https://github.com/kohler/gifsicle) much <3",
@@ -78,6 +85,10 @@ impl Cli {
 
     pub fn lossy(&self) -> Option<u32> {
         self.lossy
+    }
+
+    pub fn overwrites(&self) -> bool {
+        self.force_overwrite
     }
 
     pub fn name(&self) -> String {
