@@ -1,12 +1,13 @@
-#![windows_subsystem = "windows"]
+// #![windows_subsystem = "windows"]
 
 use std::fs::OpenOptions;
 
 use anyhow::{Context, Result};
 
 use klask::Settings;
-use log::{error, info};
+use log::error;
 
+use rich_presence::Discord;
 use rusttype::Font;
 use utils::{
     args::Cli,
@@ -15,10 +16,13 @@ use utils::{
 };
 
 mod error;
+mod rich_presence;
 mod utils;
 
 fn main() {
     pretty_env_logger::init();
+
+    let _discord = Discord::init(include_str!("RPC_ID")).expect("could not connect to discord");
 
     #[cfg(unix)]
     match ProgramMode::check() {
@@ -67,9 +71,9 @@ fn run(cli: &Cli) -> Result<()> {
         let file = OpenOptions::new().read(true).open(&file_path)?;
         match file_ty {
             MediaType::Mp4 | MediaType::Avi | MediaType::Mkv | MediaType::Webm => {
-                info!("Note: Optimization flags do not work on media files.");
-                FFmpeg::init(file_path)?.process_media(font, text, &out_path, &name, overwrite)?;
+                FFmpeg::init(file_path)?.process_media(font, text, &out_path, &name, overwrite)?
             }
+
             MediaType::Gif => process_gif(file, font, text, &out_path, &name, cli, overwrite)?,
         }
     }
