@@ -24,6 +24,7 @@ pub struct FFmpeg {
 
 impl FFmpeg {
     pub fn init(input: PathBuf) -> Result<Self> {
+        info!("Note: Optimization flags do not work on media files.");
         if cfg!(windows) {
             appdata_init()?;
             Ok(Self {
@@ -165,8 +166,6 @@ pub fn validate_format(path: &Path) -> Result<MediaType> {
         "mkv" => Ok(MediaType::Mkv),
         "webm" => Ok(MediaType::Webm),
         "gif" => Ok(MediaType::Gif),
-        ext => Err(anyhow::Error::new(ErrorKind::UnsupportedMediaFormat(
-            ext.to_string(),
-        ))),
+        ext => Err(ErrorKind::UnsupportedMediaFormat(ext.to_string()).into()),
     }
 }
