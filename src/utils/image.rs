@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, iter};
+use std::iter;
 
 use anyhow::Result;
 use image::{GenericImage, GenericImageView, ImageBuffer, Pixel, Primitive, Rgba, RgbaImage};
@@ -183,12 +183,7 @@ impl TextImage {
 
             let mut tempvec = Vec::with_capacity(str_widths.len() + 1);
             for x in 0..str_widths.len() {
-                if str_widths[accumulator..=x]
-                    .iter()
-                    .sum::<i32>()
-                    .cmp(&image_width)
-                    == Ordering::Greater
-                {
+                if str_widths[accumulator..x + 1].iter().sum::<i32>() > image_width {
                     tempvec.push(x);
                     accumulator = x;
                 }
