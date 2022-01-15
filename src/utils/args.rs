@@ -1,10 +1,11 @@
-use std::path::PathBuf;
+use crate::utils::{
+    image::random_name,
+    video::{validate_format, MediaType},
+};
 
-use crate::utils::video::validate_format;
 use anyhow::{Context, Result};
 use clap::{Parser, ValueHint};
-
-use super::{image::random_name, video::MediaType};
+use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
