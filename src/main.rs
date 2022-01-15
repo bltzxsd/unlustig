@@ -1,4 +1,4 @@
-// #![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
 
 use std::fs::OpenOptions;
 
@@ -65,13 +65,13 @@ fn run(cli: &Cli) -> Result<()> {
         .context("font could not be read")?;
 
     let (text, out_path, name, overwrite) =
-        (cli.text(), cli.output()?, cli.name(), cli.overwrites());
+        (cli.text(), cli.output()?, cli.name()?, cli.overwrites());
 
     if let Ok((file_path, file_ty)) = cli.media() {
         let file = OpenOptions::new().read(true).open(&file_path)?;
         match file_ty {
             MediaType::Mp4 | MediaType::Avi | MediaType::Mkv | MediaType::Webm => {
-                FFmpeg::init(file_path)?.process_media(font, text, &out_path, &name, overwrite)?
+                FFmpeg::init(file_path)?.process_media(font, text, &out_path, &name, overwrite)?;
             }
 
             MediaType::Gif => process_gif(file, font, text, &out_path, &name, cli, overwrite)?,

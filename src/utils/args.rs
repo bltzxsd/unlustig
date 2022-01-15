@@ -91,8 +91,8 @@ impl Cli {
         self.force_overwrite
     }
 
-    pub fn name(&self) -> String {
-        let (_, ty) = &self.media().expect("no media found");
+    pub fn name(&self) -> Result<String> {
+        let (_, ty) = &self.media()?;
         let ext = match ty {
             MediaType::Mp4 => ".mp4",
             MediaType::Avi => ".avi",
@@ -103,11 +103,11 @@ impl Cli {
         match &self.output_name {
             Some(string) => {
                 if !string.contains(ext) {
-                    return format!("{}{}", string, ext);
+                    return Ok(format!("{}{}", string, ext));
                 }
-                string.to_owned()
+                Ok(string.to_owned())
             }
-            None => format!("{}{}", random_name(), ext),
+            None => Ok(format!("{}{}", random_name(), ext)),
         }
     }
 
