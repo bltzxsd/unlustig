@@ -93,6 +93,7 @@ fn run(cli: &Cli) -> Result<()> {
 }
 
 #[cfg(unix)]
+#[derive(Debug, Clone, Copy)]
 enum ProgramMode {
     Cli,
     Gui,
