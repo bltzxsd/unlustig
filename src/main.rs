@@ -1,6 +1,5 @@
 #![windows_subsystem = "windows"]
-#![warn(
-    clippy::doc_markdown,
+#![warn( 
     clippy::double_comparisons,
     clippy::missing_errors_doc
 )]
