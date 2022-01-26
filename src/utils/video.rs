@@ -12,17 +12,27 @@ use rusttype::Font;
 
 use crate::{
     error::ErrorKind,
-    utils::image::{SetUp, TextImage},
+    utils::{
+        image::{SetUp, TextImage},
+        MediaType,
+    },
 };
 
-use super::{appdata_init, image::random_name};
+use super::{appdata_init, random_name};
 
+/// [`FFmpeg`] contains the path to the [FFmpeg](https://www.ffmpeg.org/) program.
 pub struct FFmpeg {
     exe: PathBuf,
     input: PathBuf,
 }
 
 impl FFmpeg {
+    /// Returns [`FFmpeg`] that you can operate on.
+    ///
+    /// # Result
+    /// Returns an error if [`utils::appdata()`] or [`env::var()`] fail.
+    ///
+    /// [`utils::appdata()`]: crate::utils
     pub fn init(input: PathBuf) -> Result<Self> {
         info!("Note: Optimization flags do not work on media files.");
         if cfg!(windows) {
@@ -42,6 +52,12 @@ impl FFmpeg {
         }
     }
 
+    /// Returns the width and height of the video.
+    ///
+    /// Runs `FFmpeg` and saves the first frame of the video.
+    /// Which is later used to get dimensions from [`dimensions()`]
+    ///
+    /// [`dimensions()`]: image::GenericImageView::dimensions()
     fn dimensions(&mut self) -> Result<(u32, u32)> {
         let temp_dir = env::temp_dir();
         let mut name = random_name();
@@ -53,26 +69,28 @@ impl FFmpeg {
             .to_str()
             .context("could not get string from os")?;
         // ffmpeg -ss 0.1 -i .\cat.mp4 -vframes 1 -f image2 imagefile.jpg
-        Command::new(&self.exe)
-            .args(&[
-                "-hide_banner",
-                "-loglevel",
-                "error",
-                "-y",
-                "-ss",
-                "0.1",
-                "-i",
-                input,
-                "-vframes",
-                "1",
-                "-f",
-                "image2",
-                file_str,
-            ])
-            .spawn()?
-            .wait()?;
+        #[rustfmt::skip]
+        let args = [
+            "-hide_banner", "-loglevel", "error",
+            "-y", "-ss", "0.1", "-i", input,
+            "-vframes", "1", "-f", "image2", file_str,
+        ];
+
+        Command::new(&self.exe).args(&args).spawn()?.wait()?;
         Ok(image::open(file)?.dimensions())
     }
+
+    /// Runs the main logic of video processing.
+    ///
+    /// `FFmpeg` arguments used:
+    ///
+    /// ```text
+    /// ffmpeg.exe -i media.mp4 -i caption.jpg \
+    /// -filter_complex \
+    /// "[0:v]pad=640:video_width:0:(video_height + caption_height)[a]; \
+    /// [a][1:v]overlay=0:0,setsar=1" \
+    /// -c:a copy output.mp4
+    /// ```
     pub fn process_media(
         &mut self,
         font: Font<'static>,
@@ -84,14 +102,17 @@ impl FFmpeg {
         let (width, height) = self.dimensions()?;
         let init = SetUp::init(font).with_dimensions(width, height);
         info!("Creating caption image...");
+
         let image = TextImage::new(init, text).render()?;
         let mut caption_name = random_name();
         caption_name.push_str(".jpg");
         let caption_location = std::env::temp_dir().join(caption_name);
         image.save(&caption_location)?;
         info!("{}", "Caption image created!".green());
-        let (_, caption_height) = image.dimensions();
+
+        let caption_height = image.dimensions().1;
         let (video_width, video_height) = self.dimensions()?;
+
         // ffmpeg.exe -i .\cat.mp4 -i .\caption.jpg \
         // -filter_complex "[0:v]pad=640:788:0:148[a];[a][1:v]overlay=0:0,setsar=1"
         // -c:a copy output.mp4
@@ -101,9 +122,7 @@ impl FFmpeg {
             "-i",
             self.input.to_str().context("cannot convert to str")?,
             "-i",
-            caption_location
-                .to_str()
-                .context("cannot convert to str)")?,
+            caption_location.to_str().context("cannot convert to str")?,
         ];
         let filter_complex = [
             "-filter_complex".into(),
@@ -145,15 +164,13 @@ impl FFmpeg {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub enum MediaType {
-    Mp4,
-    Avi,
-    Mkv,
-    Webm,
-    Gif,
-}
-
+/// Validate file formats.
+///
+/// # Errors
+///
+/// Returns [`UnsupportedMediaFormat`] if file is unsupported.
+///
+/// [`UnsupportedMediaFormat`]: crate::error::ErrorKind::UnsupportedMediaFormat
 pub fn validate_format(path: &Path) -> Result<MediaType> {
     match path
         .extension()
