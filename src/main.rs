@@ -1,8 +1,5 @@
 #![windows_subsystem = "windows"]
-#![warn( 
-    clippy::double_comparisons,
-    clippy::missing_errors_doc
-)]
+#![warn(clippy::double_comparisons, clippy::missing_errors_doc)]
 #![deny(missing_docs)]
 
 //! Unlustig-rs
