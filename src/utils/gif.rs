@@ -1,5 +1,5 @@
 use std::{
-    env,
+    borrow::ToOwned,
     fs::File,
     path::{Path, PathBuf},
     process::Command,
@@ -9,14 +9,15 @@ use anyhow::{Context, Result};
 use colored::Colorize;
 use image::{
     gif::{GifDecoder, GifEncoder},
-    AnimationDecoder, GenericImage, ImageDecoder, ImageBuffer,
+    AnimationDecoder, GenericImage, ImageBuffer, ImageDecoder,
 };
 use log::{info, warn};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use rusttype::Font;
+use utils::DepTy;
 
 use crate::utils::{
-    appdata_init,
+    self, appdata_init,
     args::Cli,
     image::{SetUp, TextImage},
     random_name,
@@ -31,21 +32,13 @@ impl Gifsicle {
     /// Initializes `Gifsicle`'s path.
     ///
     /// # Result
-    /// This function will return an error if the `%appdata%` variable is not found on Windows.
+    /// * On Windows: Returns an error if the `%appdata%` variable
+    /// is not found
+    /// * On Unix: Returns an error if Gifsicle is not installed
+    /// and on the path.
     pub fn init() -> Result<Self> {
-        if cfg!(windows) {
-            appdata_init()?;
-            Ok(Self {
-                // program: AppData/unlustig-rs/gifsicle.rs
-                exe: PathBuf::from(env::var("APPDATA")?)
-                    .join("unlustig-rs")
-                    .join("gifsicle.exe"),
-            })
-        } else {
-            Ok(Self {
-                exe: PathBuf::new(),
-            })
-        }
+        let exe = appdata_init(DepTy::Gifsicle)?;
+        Ok(Self { exe })
     }
 
     /// Runs `Gifsicle` with specified flags.
@@ -99,15 +92,13 @@ pub fn process_gif(
     let init = SetUp::init(font).with_dimensions(gif_w, gif_h);
     info!("Creating caption image...");
     let image = TextImage::new(init, text).render()?;
-    
+
     info!("{}", "Caption image created!".green());
     let mut frames = decoder.into_frames().collect_frames()?;
     info!("{}", "Rendering GIF...".blue());
     frames.par_iter_mut().for_each(|f| {
         let f = f.buffer_mut();
-        
-        let mut buffer = ImageBuffer::new(gif_w, gif_h + image.height()); 
-        
+        let mut buffer = ImageBuffer::new(gif_w, gif_h + image.height());
         buffer
             .copy_from(&image, 0, 0)
             .expect("could not copy buffer");
@@ -138,12 +129,11 @@ pub fn process_gif(
             .to_str()
             .context("invalid output path (not utf-8)")?,
     );
-    let opt = cli.opt_level().map(std::borrow::ToOwned::to_owned);
+
+    let opt = cli.opt_level().map(ToOwned::to_owned);
     let lossy = cli.lossy();
     let reduce = cli.reduce();
-    Gifsicle::init()
-        .context("Gifsicle not found. If using Unix, please install and add it to your path!")?
-        .run(opt, lossy, reduce, &output_path)?;
+    Gifsicle::init()?.run(opt, lossy, reduce, &output_path)?;
     Ok(())
 }
 
@@ -161,7 +151,7 @@ fn file_and_path(
     name: &str,
     overwrite: bool,
 ) -> Result<(File, PathBuf), anyhow::Error> {
-    let default = |file_name: &str | -> Result<(File, PathBuf), anyhow::Error> {
+    let default = |file_name: &str| -> Result<(File, PathBuf), anyhow::Error> {
         Ok((
             File::create(&out_path.join(&file_name))?,
             out_path.join(file_name),

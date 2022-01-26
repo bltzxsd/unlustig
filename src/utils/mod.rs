@@ -2,10 +2,17 @@
 //!
 //! The `crate::utils` module contains common functions, and enums.
 
-use std::{fs::File, io::Write, iter, path::PathBuf};
-
+#[cfg(windows)]
 use log::{info, warn};
+
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
+#[cfg(windows)]
+use std::{fs::File, io::Write};
+
+use std::{iter, path::PathBuf};
+
+#[cfg(unix)]
+use crate::error::ErrorKind;
 
 /// Argument handling with [`Clap`].
 ///
@@ -33,6 +40,12 @@ pub enum MediaType {
     Gif,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum DepTy {
+    Gifsicle,
+    Ffmpeg,
+}
+
 /// Writes [`Gifsicle`] and [`FFmpeg`] to the appdata folder on Windows.
 ///
 /// # Result
@@ -40,32 +53,50 @@ pub enum MediaType {
 ///
 /// [`Gifsicle`]: https://www.lcdf.org/gifsicle/
 /// [`FFmpeg`]: https://www.ffmpeg.org/
-pub fn appdata_init() -> anyhow::Result<()> {
+pub fn appdata_init(want: DepTy) -> anyhow::Result<PathBuf> {
     #[cfg(windows)]
-    let gifsicle = include_bytes!("../../deps/gifsicle/gifsicle.exe");
-    let ffmpeg = include_bytes!("../../deps/ffmpeg/ffmpeg.exe");
+    {
+        let gifsicle = include_bytes!("../../deps/gifsicle/gifsicle.exe");
+        let ffmpeg = include_bytes!("../../deps/ffmpeg/ffmpeg.exe");
 
-    let unlustig = PathBuf::from(std::env::var("APPDATA")?).join("unlustig-rs");
-    // if appdata/unlustig-rs doesnt exist, we make a new one and write it
+        let unlustig = PathBuf::from(std::env::var("APPDATA")?).join("unlustig-rs");
+        // if appdata/unlustig-rs doesnt exist, we make a new one and write it
 
-    if !unlustig.exists() {
-        warn!("{} does not exist. Trying to create..", unlustig.display());
-        std::fs::create_dir(&unlustig)?;
-        info!("Created {}", unlustig.display());
-    }
-    let (gif_exe, ffmpeg_exe) = (unlustig.join("gifsicle.exe"), unlustig.join("ffmpeg.exe"));
-    if !gif_exe.exists() {
-        let mut sicle = File::create(gif_exe)?;
-        sicle.write_all(gifsicle)?;
-        info!("Wrote gifsicle.exe to {}", unlustig.display());
-    }
-    if !ffmpeg_exe.exists() {
-        let mut ffm = File::create(ffmpeg_exe)?;
-        ffm.write_all(ffmpeg)?;
-        info!("Wrote ffmpeg.exe to {}", unlustig.display())
+        if !unlustig.exists() {
+            warn!("{} does not exist. Trying to create..", unlustig.display());
+            std::fs::create_dir(&unlustig)?;
+            info!("Created {}", unlustig.display());
+        }
+        let (gif_exe, ffmpeg_exe) = (unlustig.join("gifsicle.exe"), unlustig.join("ffmpeg.exe"));
+        match want {
+            DepTy::Gifsicle => {
+                if !gif_exe.exists() {
+                    let mut sicle = File::create(&gif_exe)?;
+                    sicle.write_all(gifsicle)?;
+                    info!("Wrote gifsicle.exe to {}", unlustig.display());
+                }
+                Ok(gif_exe)
+            }
+            DepTy::Ffmpeg => {
+                if !ffmpeg_exe.exists() {
+                    let mut ffm = File::create(&ffmpeg_exe)?;
+                    ffm.write_all(ffmpeg)?;
+                    info!("Wrote ffmpeg.exe to {}", unlustig.display())
+                }
+                Ok(ffmpeg_exe)
+            }
+        }
     }
 
-    Ok(())
+    #[cfg(unix)]
+    {
+        use ErrorKind::{FfmpegNotFound, GifsicleNotFound};
+        match want {
+            // since which takes care of path on unix, we can just return that.
+            DepTy::Gifsicle => which::which("gifsicle").map_err(|err| GifsicleNotFound(err).into()),
+            DepTy::Ffmpeg => which::which("ffmpeg").map_err(|err| FfmpegNotFound(err).into()),
+        }
+    }
 }
 
 /// Generates a random name with 5 alphanumeric chars.

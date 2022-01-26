@@ -14,7 +14,7 @@ use crate::{
     error::ErrorKind,
     utils::{
         image::{SetUp, TextImage},
-        MediaType,
+        DepTy, MediaType,
     },
 };
 
@@ -35,21 +35,8 @@ impl FFmpeg {
     /// [`utils::appdata()`]: crate::utils
     pub fn init(input: PathBuf) -> Result<Self> {
         info!("Note: Optimization flags do not work on media files.");
-        if cfg!(windows) {
-            appdata_init()?;
-            Ok(Self {
-                exe: PathBuf::from(env::var("APPDATA")?)
-                    .join("unlustig-rs")
-                    .join("ffmpeg.exe"),
-
-                input,
-            })
-        } else {
-            Ok(Self {
-                exe: PathBuf::from("ffmpeg"),
-                input,
-            })
-        }
+        let exe = appdata_init(DepTy::Ffmpeg)?;
+        Ok(Self { exe, input })
     }
 
     /// Returns the width and height of the video.
