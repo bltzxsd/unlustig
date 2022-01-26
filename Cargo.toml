@@ -22,3 +22,6 @@ rayon = "1.5.1"
 rusttype = "0.9.2"
 thiserror = "1.0.30"
 discord-rich-presence = { git = "https://github.com/bltzxsd/discord-rich-presence", rev = "74bf91d" }
+
+[target.'cfg(unix)'.dependencies]
+which = "4.2.2"
