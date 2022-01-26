@@ -101,9 +101,7 @@ impl TextImage {
             let images: Vec<_> = self
                 .text
                 .par_iter()
-                .map(|text| {
-                    self.render_text(text, height, single)
-                })
+                .map(|text| self.render_text(text, height, single))
                 .collect();
             Self::v_concat(&images)?
         };
@@ -179,7 +177,7 @@ impl TextImage {
     fn set_bg(
         buffer: &ImageBuffer<Rgba<u8>, Vec<u8>>,
         gif_w: u32,
-    ) -> image::ImageBuffer<image::Rgba<u8>, std::vec::Vec<u8>> {
+    ) -> image::ImageBuffer<Rgba<u8>, Vec<u8>> {
         let mut bg = blank_buffer_new(gif_w, buffer.height() as _);
 
         let (x, y) = {
@@ -303,15 +301,11 @@ impl TextImage {
     }
 }
 
-/// Create a new white image buffer.
-fn blank_buffer_new(w: u32, h: u32) -> RgbaImage {
-    // text with only one word on it, does not have enough padding to look good
-    let scale_factor: f32 = 1.2;
-    let mut image = RgbaImage::new(
-        (w as f32 * scale_factor) as _,
-        (h as f32 * scale_factor) as _,
-    );
-
+/// Create a new white image buffer. The returned [`ImageBuffer`] will
+/// have a size 1.2 times the given width and height.
+fn blank_buffer_new(w: u32, h: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+    let mut image: ImageBuffer<Rgba<u8>, Vec<u8>> =
+        ImageBuffer::new((w as f32 * 1.2) as u32, (h as f32 * 1.2) as u32);
     for px in image.pixels_mut() {
         px.0 = [255, 255, 255, 255];
     }
