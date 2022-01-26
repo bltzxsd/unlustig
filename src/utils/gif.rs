@@ -9,21 +9,29 @@ use anyhow::{Context, Result};
 use colored::Colorize;
 use image::{
     gif::{GifDecoder, GifEncoder},
-    AnimationDecoder, GenericImage, ImageDecoder, RgbaImage,
+    AnimationDecoder, GenericImage, ImageDecoder, ImageBuffer,
 };
 use log::{info, warn};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use rusttype::Font;
 
-use crate::utils::image::{random_name, SetUp, TextImage};
+use crate::utils::{
+    appdata_init,
+    args::Cli,
+    image::{SetUp, TextImage},
+    random_name,
+};
 
-use super::{appdata_init, args::Cli};
-
+/// Contains the path to the [Gifsicle](https://www.lcdf.org/gifsicle/) program.
 pub struct Gifsicle {
     exe: PathBuf,
 }
 
 impl Gifsicle {
+    /// Initializes `Gifsicle`'s path.
+    ///
+    /// # Result
+    /// This function will return an error if the `%appdata%` variable is not found on Windows.
     pub fn init() -> Result<Self> {
         if cfg!(windows) {
             appdata_init()?;
@@ -40,7 +48,7 @@ impl Gifsicle {
         }
     }
 
-    ///
+    /// Runs `Gifsicle` with specified flags.
     pub fn run(
         self,
         opt: Option<String>,
@@ -76,6 +84,7 @@ impl Gifsicle {
     }
 }
 
+/// Creates the gifcaption.
 pub fn process_gif(
     gif: File,
     font: Font<'static>,
@@ -90,13 +99,15 @@ pub fn process_gif(
     let init = SetUp::init(font).with_dimensions(gif_w, gif_h);
     info!("Creating caption image...");
     let image = TextImage::new(init, text).render()?;
+    
     info!("{}", "Caption image created!".green());
     let mut frames = decoder.into_frames().collect_frames()?;
     info!("{}", "Rendering GIF...".blue());
     frames.par_iter_mut().for_each(|f| {
         let f = f.buffer_mut();
-        let mut buffer = RgbaImage::new(gif_w, gif_h + image.height());
-
+        
+        let mut buffer = ImageBuffer::new(gif_w, gif_h + image.height()); 
+        
         buffer
             .copy_from(&image, 0, 0)
             .expect("could not copy buffer");
@@ -136,15 +147,24 @@ pub fn process_gif(
     Ok(())
 }
 
+/// Returns the File and the path of the file.
+///
+/// This takes into account if the overwrite flag was enabled.
+///
+/// If overwrite was disabled, custom name specified, and a file with a similar name was found,
+/// prepends a random name using [`random_name()`].
+///
+/// # Errors
+/// Returns an error if the file creation fails.
 fn file_and_path(
     out_path: &Path,
     name: &str,
     overwrite: bool,
 ) -> Result<(File, PathBuf), anyhow::Error> {
-    let default = |file_name| -> Result<(File, PathBuf), anyhow::Error> {
+    let default = |file_name: &str | -> Result<(File, PathBuf), anyhow::Error> {
         Ok((
             File::create(&out_path.join(&file_name))?,
-            out_path.join(&file_name),
+            out_path.join(file_name),
         ))
     };
 
@@ -154,8 +174,8 @@ fn file_and_path(
             default(name)?
         } else {
             warn!("Overwrite is disabled. File with a similar name found. Modifying name.");
-            let x = format!("{}_{}", random_name(), &name);
-            default(&x)?
+            let bind = format!("{}_{}", random_name(), &name);
+            default(&bind)?
         }
     } else {
         default(name)?
