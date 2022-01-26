@@ -1,4 +1,14 @@
 #![windows_subsystem = "windows"]
+#![warn(
+    clippy::doc_markdown,
+    clippy::double_comparisons,
+    clippy::missing_errors_doc
+)]
+#![deny(missing_docs)]
+
+//! Unlustig-rs
+//!
+//! iFunny Gif Caption Maker.
 
 use std::fs::OpenOptions;
 
@@ -9,14 +19,15 @@ use log::error;
 
 use rich_presence::Discord;
 use rusttype::Font;
-use utils::{
-    args::Cli,
-    gif::process_gif,
-    video::{FFmpeg, MediaType},
-};
+use utils::{args::Cli, gif::process_gif, video::FFmpeg, MediaType};
 
-mod error;
+/// Error module.
+pub(crate) mod error;
+
+/// Rich Presence module.
 mod rich_presence;
+
+/// Utility module.
 mod utils;
 
 fn main() {
@@ -60,6 +71,7 @@ fn main() {
     }
 }
 
+/// Main logic.
 fn run(cli: &Cli) -> Result<()> {
     let font = Font::try_from_bytes(include_bytes!("../font/ifunny.otf"))
         .context("font could not be read")?;
@@ -92,6 +104,7 @@ fn run(cli: &Cli) -> Result<()> {
     Ok(())
 }
 
+/// The implemented ways to interact with the program.
 #[cfg(unix)]
 #[derive(Debug, Clone, Copy)]
 enum ProgramMode {
@@ -101,6 +114,7 @@ enum ProgramMode {
 
 #[cfg(unix)]
 impl ProgramMode {
+    /// Checks the current mode of the program depending on the number of CLI arguments given.
     pub fn check() -> Self {
         if std::env::args().len() > 1 {
             return ProgramMode::Cli;
