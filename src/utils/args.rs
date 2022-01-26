@@ -1,18 +1,21 @@
-use crate::utils::{
-    image::random_name,
-    video::{validate_format, MediaType},
-};
-
+use crate::utils::{random_name, video::validate_format, MediaType};
 use anyhow::{Context, Result};
 use clap::{Parser, ValueHint};
 use std::path::PathBuf;
 
+/// CLI arguments parser for GUI and TUI.
 #[derive(Parser, Debug)]
 #[clap(author, version, about)]
 pub struct Cli {
+    /// Caption for the image.
+    ///
+    /// See also: [`Cli::text()`]
     #[clap(short = 'T', long, help = "Your caption goes here.", required = true)]
     caption: String,
 
+    /// Input media for processing.
+    ///
+    /// See also: [`Cli::media()`]
     #[clap(
         short = 'G',
         long,
@@ -23,6 +26,9 @@ pub struct Cli {
     )]
     media: PathBuf,
 
+    /// The directory where the ouptut should be saved at.
+    ///
+    /// See also: [`Cli::output()`]
     #[clap(
         short = 'o',
         long,
@@ -33,6 +39,9 @@ pub struct Cli {
     )]
     output_directory: Option<PathBuf>,
 
+    /// Specified name of the output file.
+    ///
+    /// See also: [`Cli::name()`]
     #[clap(
         short = 'n',
         long,
@@ -40,6 +49,10 @@ pub struct Cli {
     )]
     output_name: Option<String>,
 
+    /// Determines if the output should overwrite
+    /// a pre-existing file.
+    ///
+    /// See also: [`Cli::overwrites()`]
     #[clap(
         short = 'f',
         long,
@@ -47,6 +60,11 @@ pub struct Cli {
     )]
     force_overwrite: bool,
 
+    /// Specified the optimization level to be used.
+    ///
+    /// Optimization levels are implemented only for [`Gif`]s.
+    ///
+    /// [`Gif`]: crate::utils::MediaType::Gif
     #[clap(
         short = 'z',
         long,
@@ -55,6 +73,12 @@ pub struct Cli {
     )]
     optimization: Option<String>,
 
+    /// Determines how lossy will the output file be.
+    /// Corresponds to `-lossy=<num>` parameter in [Gifsicle](https://www.lcdf.org/gifsicle/).
+    ///
+    /// Lossy levels are implemented only for [`Gif`]s
+    ///
+    /// [`Gif`]: crate::utils::MediaType::Gif
     #[clap(
         short = 'l',
         long,
@@ -63,6 +87,12 @@ pub struct Cli {
     )]
     lossy: Option<u32>,
 
+    /// Determines whether the output should have its colors reduced to 256.
+    /// Corresponds to the `--color reduce 256` argument in [Gifsicle](https://www.lcdf.org/gifsicle/).
+    ///
+    /// Reduce is implemeted only for [`Gif`]s.
+    ///
+    /// [`Gif`]: crate::utils::MediaType::Gif
     #[clap(
         short = 'r',
         long,
@@ -72,28 +102,36 @@ pub struct Cli {
 }
 
 impl Cli {
-    pub fn opt_level(&self) -> Option<&String> {
-        self.optimization.as_ref()
-    }
-
-    pub fn reduce(&self) -> bool {
-        self.reduce
-    }
-
-    pub fn media(&self) -> Result<(PathBuf, MediaType)> {
-        Ok((self.media.clone(), validate_format(&self.media)?))
-    }
-
+    /// Returns the lossiness level.
+    ///
+    /// # Option
+    /// Returns `None` if no lossiness was given.
     pub fn lossy(&self) -> Option<u32> {
         self.lossy
     }
 
-    pub fn overwrites(&self) -> bool {
-        self.force_overwrite
+    /// Returns a tuple of the input media's [`Path`] and [`Type`]
+    ///
+    /// # Result
+    /// Returns an [`UnsupportedMediaFormat`] error if
+    /// the input file is unsupported.
+    ///
+    /// [`UnsupportedMediaFormat`]: crate::error::ErrorKind::UnsupportedMediaFormat
+    /// [`Path`]: std::path::Path
+    /// [`Type`]: crate::utils::MediaType
+    pub fn media(&self) -> Result<(PathBuf, MediaType)> {
+        Ok((self.media.clone(), validate_format(&self.media)?))
     }
 
+    /// Returns the name of the output media.
+    /// 
+    /// # Result
+    /// Returns an [`UnsupportedMediaFormat`] error if
+    /// /// the input file is unsupported.
+    ///
+    /// [`UnsupportedMediaFormat`]: crate::error::ErrorKind::UnsupportedMediaFormat
     pub fn name(&self) -> Result<String> {
-        let (_, ty) = &self.media()?;
+        let (_, ty) = self.media()?;
         let ext = match ty {
             MediaType::Mp4 => ".mp4",
             MediaType::Avi => ".avi",
@@ -112,6 +150,28 @@ impl Cli {
         }
     }
 
+    /// Returns the Optimization level of output.
+    ///
+    /// # Option
+    /// Returns `None` if no optimization level was specified.
+    pub fn opt_level(&self) -> Option<&String> {
+        self.optimization.as_ref()
+    }
+
+    /// Returns the directory where the output should be saved.
+    ///
+    /// If the output directory was not specified, either of
+    /// the following directories will be returned:
+    ///
+    /// - On Unix: `<current directory>`
+    /// - On Windows: `UserProfile\Pictures`
+    ///
+    /// # Result
+    /// - On Unix: Returns an error if the current directory
+    /// is invalid or the program lacks permissons.
+    /// - On Windows: Returns a [`VarError`] if the `$Env:UserProfile` does not exist.
+    ///
+    /// [`VarError`]: std::env::VarError
     pub fn output(&self) -> Result<PathBuf> {
         match &self.output_directory {
             Some(output) => Ok(output.clone()),
@@ -129,6 +189,17 @@ impl Cli {
         }
     }
 
+    /// Returns true if force overwrite is enabled.
+    pub fn overwrites(&self) -> bool {
+        self.force_overwrite
+    }
+
+    /// Returns true if `--colors 256` is enabled.
+    pub fn reduce(&self) -> bool {
+        self.reduce
+    }
+
+    /// Returns the caption text with whitespace trimmed.
     pub fn text(&self) -> &str {
         self.caption.trim()
     }
