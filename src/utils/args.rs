@@ -124,7 +124,7 @@ impl Cli {
     }
 
     /// Returns the name of the output media.
-    /// 
+    ///
     /// # Result
     /// Returns an [`UnsupportedMediaFormat`] error if
     /// /// the input file is unsupported.
