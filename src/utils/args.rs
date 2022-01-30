@@ -1,7 +1,7 @@
 use crate::utils::{random_name, video::validate_format, MediaType};
-use anyhow::{Context, Result};
+use anyhow::Result;
 use clap::{Parser, ValueHint};
-use std::path::PathBuf;
+use std::{io, path::PathBuf};
 
 /// CLI arguments parser for GUI and TUI.
 #[derive(Parser, Debug)]
@@ -163,29 +163,24 @@ impl Cli {
     /// If the output directory was not specified, either of
     /// the following directories will be returned:
     ///
-    /// - On Unix: `<current directory>`
-    /// - On Windows: `UserProfile\Pictures`
+    /// - On Unix: `/home/<username>/Pictures`
+    /// - On Windows: `<drive>:\Users\<username>\Pictures`
     ///
     /// # Result
-    /// - On Unix: Returns an error if the current directory
-    /// is invalid or the program lacks permissons.
-    /// - On Windows: Returns a [`VarError`] if the `$Env:UserProfile` does not exist.
-    ///
-    /// [`VarError`]: std::env::VarError
+    /// Returns an [`NotFound`] error if the default pictures folder was not found.
+    /// 
+    /// [`NotFound`]: std::io::ErrorKind::NotFound  
     pub fn output(&self) -> Result<PathBuf> {
         match &self.output_directory {
             Some(output) => Ok(output.clone()),
-            None => {
-                #[cfg(windows)]
-                return Ok(PathBuf::from(
-                    std::env::var("UserProfile").context("unable to read userprofile env var")?,
+            None => match dirs::picture_dir() {
+                Some(path) => Ok(path),
+                None => Err(io::Error::new(
+                    io::ErrorKind::NotFound,
+                    "the default pictures folder was not found",
                 )
-                .join("Pictures"));
-                #[cfg(unix)]
-                return Ok(PathBuf::from(std::env::current_dir().context(
-                    "Current directory is invalid or lacking permissions for access.",
-                )?));
-            }
+                .into()),
+            },
         }
     }
 
