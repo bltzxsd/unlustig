@@ -3,6 +3,8 @@ name = "unlustig"
 version = "0.0.11"
 edition = "2021"
 authors = ["blitzxd"]
+homepage = "https://github.com/bltzxsd/unlustig"
+repository = "https://github.com/bltzxsd/unlustig"
 
 description = "iFunny GIF Caption maker, but this time, made using Rust."
 license = "MIT"
