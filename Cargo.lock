@@ -566,7 +566,7 @@ dependencies = [
 [[package]]
 name = "discord-rich-presence"
 version = "0.1.8"
-source = "git+https://github.com/bltzxsd/discord-rich-presence?rev=74bf91d#74bf91dff746a74d59f02e9244d34f818bf566d8"
+source = "git+https://github.com/bltzxsd/discord-rich-presence#5dd2bac7ffc4bebf005430abee645d8f27d4e1ef"
 dependencies = [
  "serde",
  "serde_derive",
