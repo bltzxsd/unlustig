@@ -28,7 +28,7 @@ You can download the latest release **[here](https://github.com/bltzxsd/unlustig
 ## Building from source.
 This program is made on Rust Edition 2021. 
 
-The MSRV (Minimum Supported Rust Version) is: 1.56.1
+The Minimum Supported Rust Version (MSRV) is: 1.56.1
 
 For debugging purposes, omit the `--release` flag.
 ```
