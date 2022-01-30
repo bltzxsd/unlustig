@@ -11,7 +11,7 @@ use std::fs::OpenOptions;
 use anyhow::{Context, Result};
 
 use klask::Settings;
-use log::error;
+use log::{error, warn};
 
 use rich_presence::Discord;
 use rusttype::Font;
@@ -29,7 +29,9 @@ mod utils;
 fn main() {
     pretty_env_logger::init();
 
-    let _discord = Discord::init(include_str!("RPC_ID")).expect("could not connect to discord");
+    if let Err(e) = Discord::init(include_str!("RPC_ID")) {
+        warn!("failed discord RPC initialization: {}", e);
+    };
 
     #[cfg(unix)]
     match ProgramMode::check() {
