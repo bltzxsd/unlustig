@@ -1,5 +1,5 @@
 use anyhow::Result;
-use image::{GenericImage, GenericImageView, ImageBuffer, Pixel, Primitive, Rgba, RgbaImage};
+use image::{GenericImage, GenericImageView, ImageBuffer, Pixel, Primitive, Rgba};
 use imageproc::drawing::{draw_text_mut, text_size};
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use rusttype::{Font, Scale};
@@ -63,12 +63,10 @@ pub struct TextImage {
 impl TextImage {
     /// Create a new [`TextImage`] to be used to image captioning.
     pub fn new(init: SetUp, text: &str) -> Self {
-        let text_nlsplit: Vec<_> = text.split('\n').collect();
-        let split_texts: Vec<Vec<_>> = text_nlsplit
-            .iter()
-            .map(|str| str.split_whitespace().collect())
+        let split_texts: Vec<Vec<_>> = text
+            .split('\n')
+            .map(|s| s.split_whitespace().collect())
             .collect();
-
         let scale = init.scale();
 
         let text = Self::wrap_text(
@@ -119,7 +117,7 @@ impl TextImage {
         let (text_width, text_height) = text_size(self.init.scale(), self.init.font(), text);
         // padding for the text up and down
         let height = (height as f32 * if single { 2.5 } else { 1.3 }) as u32;
-        let mut image = RgbaImage::new(text_width as u32, height as u32);
+        let mut image = ImageBuffer::new(text_width as u32, height as u32);
         let y_offset = (image.height() as i32 - text_height) / 2;
         draw_text_mut(
             &mut image,
