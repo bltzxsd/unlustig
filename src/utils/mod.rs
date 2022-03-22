@@ -4,7 +4,9 @@
 
 use anyhow::Context;
 use indicatif::{ProgressBar, ProgressStyle};
-use log::{info, warn};
+use log::info;
+#[cfg(windows)]
+use log::warn;
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use std::{fs::File, io::Write};
 use std::{env, io::Read, iter, path::PathBuf};
@@ -85,7 +87,7 @@ pub fn appdata_init(dep: DepTy) -> anyhow::Result<PathBuf> {
     #[cfg(unix)]
     {
         use ErrorKind::{FfmpegNotFound, GifsicleNotFound};
-        match want {
+        match dep {
             // since which takes care of path on unix, we can just return that.
             DepTy::Gifsicle => which::which("gifsicle").map_err(|err| GifsicleNotFound(err).into()),
             DepTy::Ffmpeg => which::which("ffmpeg").map_err(|err| FfmpegNotFound(err).into()),
