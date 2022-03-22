@@ -21,6 +21,9 @@ Optimization only works with GIF files.
 
 You can download the latest release **[here](https://github.com/bltzxsd/unlustig/releases/latest)**.
 
+- Windows users can install the program using the `msi` installer
+- Arch users can download the PKGBUILD file and use an AUR helper. 
+
 ## Examples
 ![gif](https://media.discordapp.net/attachments/834076909557645335/929746951757496351/2VUqz.gif)
 ![gif2](https://media.discordapp.net/attachments/834076909557645335/929748427724701706/ezgif-2-5dbac32931.gif)
@@ -44,8 +47,8 @@ Gifsicle is used for GIF compression.
 
 FFmpeg is used for video processing.
 
-Both of them are already packaged in the Windows executable. 
-Linux users, if using optimization flags or mp4, *must* have [gifsicle](https://www.lcdf.org/gifsicle/) and [FFmpeg](https://www.ffmpeg.org/) installed and on their PATH.
+If Windows users do not have a dependency installed, the program will download an executable automatically.
+Linux users, if using optimization flags or mp4 media, *must* have [gifsicle](https://www.lcdf.org/gifsicle/) and [FFmpeg](https://www.ffmpeg.org/) installed and on their PATH.
 
 ## License 
 This repository is covered under the MIT license.
