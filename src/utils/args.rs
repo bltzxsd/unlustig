@@ -193,11 +193,10 @@ impl Cli {
             Some(output) => Ok(output.clone()),
             None => match dirs::picture_dir() {
                 Some(path) => Ok(path),
-                None => Err(io::Error::new(
-                    io::ErrorKind::NotFound,
-                    "the default pictures folder was not found",
-                )
-                .into()),
+                None => Err(
+                    anyhow::Error::from(io::Error::from(io::ErrorKind::NotFound))
+                        .context("the default pictures folder was not found"),
+                ),
             },
         }
     }
