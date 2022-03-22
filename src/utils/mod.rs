@@ -4,10 +4,8 @@
 
 use anyhow::Context;
 use indicatif::{ProgressBar, ProgressStyle};
-#[cfg(windows)]
 use log::{info, warn};
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
-#[cfg(windows)]
 use std::{fs::File, io::Write};
 use std::{env, io::Read, iter, path::PathBuf};
 
