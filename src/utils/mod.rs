@@ -2,14 +2,16 @@
 //!
 //! The `crate::utils` module contains common functions, and enums.
 
+use anyhow::Context;
+use indicatif::{ProgressBar, ProgressStyle};
 #[cfg(windows)]
 use log::{info, warn};
-
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 #[cfg(windows)]
 use std::{fs::File, io::Write};
+use std::{env, io::Read, iter, path::PathBuf};
 
-use std::{iter, path::PathBuf};
+type Result<T> = std::result::Result<T, anyhow::Error>;
 
 #[cfg(unix)]
 use crate::error::ErrorKind;
@@ -46,6 +48,16 @@ pub enum DepTy {
     Ffmpeg,
 }
 
+impl std::fmt::Display for DepTy {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let x = match *self {
+            DepTy::Gifsicle => "Gifsicle",
+            DepTy::Ffmpeg => "FFmpeg",
+        };
+        write!(f, "{x}")
+    }
+}
+
 /// Writes [`Gifsicle`] and [`FFmpeg`] to the appdata folder on Windows.
 ///
 /// # Result
@@ -53,39 +65,23 @@ pub enum DepTy {
 ///
 /// [`Gifsicle`]: https://www.lcdf.org/gifsicle/
 /// [`FFmpeg`]: https://www.ffmpeg.org/
-pub fn appdata_init(want: DepTy) -> anyhow::Result<PathBuf> {
+pub fn appdata_init(dep: DepTy) -> anyhow::Result<PathBuf> {
     #[cfg(windows)]
     {
-        let gifsicle = include_bytes!("../../deps/gifsicle/gifsicle.exe");
-        let ffmpeg = include_bytes!("../../deps/ffmpeg/ffmpeg.exe");
+        let unlustig = PathBuf::from(env::var("APPDATA")?).join("unlustig-rs");
+        let executable = match dep {
+            DepTy::Gifsicle => unlustig.join("gifsicle.exe"),
+            DepTy::Ffmpeg => unlustig.join("ffmpeg.exe"),
+        };
 
-        let unlustig = PathBuf::from(std::env::var("APPDATA")?).join("unlustig-rs");
-        // if appdata/unlustig-rs doesnt exist, we make a new one and write it
-
-        if !unlustig.exists() {
+        if !unlustig.exists() || !executable.exists() {
             warn!("{} does not exist. Trying to create..", unlustig.display());
-            std::fs::create_dir(&unlustig)?;
+            dep.download()
+                .context(format!("failed to download {dep}"))?;
             info!("Created {}", unlustig.display());
         }
-        let (gif_exe, ffmpeg_exe) = (unlustig.join("gifsicle.exe"), unlustig.join("ffmpeg.exe"));
-        match want {
-            DepTy::Gifsicle => {
-                if !gif_exe.exists() {
-                    let mut sicle = File::create(&gif_exe)?;
-                    sicle.write_all(gifsicle)?;
-                    info!("Wrote gifsicle.exe to {}", unlustig.display());
-                }
-                Ok(gif_exe)
-            }
-            DepTy::Ffmpeg => {
-                if !ffmpeg_exe.exists() {
-                    let mut ffm = File::create(&ffmpeg_exe)?;
-                    ffm.write_all(ffmpeg)?;
-                    info!("Wrote ffmpeg.exe to {}", unlustig.display())
-                }
-                Ok(ffmpeg_exe)
-            }
-        }
+
+        Ok(executable)
     }
 
     #[cfg(unix)]
@@ -103,8 +99,62 @@ pub fn appdata_init(want: DepTy) -> anyhow::Result<PathBuf> {
 pub fn random_name() -> String {
     let mut rng = thread_rng();
     iter::repeat(())
-        .map(|()| rng.sample(Alphanumeric))
+        .map(|_| rng.sample(Alphanumeric))
         .map(char::from)
         .take(5)
         .collect()
+}
+
+impl DepTy {
+    /// Downloads the specified dependency.
+    pub fn download(&self) -> Result<()> {
+        let url = match *self {
+            DepTy::Gifsicle => {
+                "https://github.com/bltzxsd/unlustig/raw/main/deps/gifsicle/gifsicle.exe"
+            }
+            DepTy::Ffmpeg => "https://github.com/bltzxsd/unlustig/raw/main/deps/ffmpeg/ffmpeg.exe",
+        };
+
+        let request = ureq::get(url).call()?;
+
+        let size: u64 = request
+            .header("content-length")
+            .context("could not get download size")?
+            .parse()?;
+
+        let fname = url.split('/').last().unwrap_or("unknown");
+        let bytes = human_bytes::human_bytes(size as f64);
+
+        info!("Downloading {fname} - {bytes}");
+
+        let chunk_size = 1024usize;
+
+        let pb = ProgressBar::new(size);
+        pb.set_style(ProgressStyle::default_bar()
+            .template("{spinner:.green} [{elapsed_precise}] [{wide_bar:.cyan/blue}] {bytes}/{total_bytes} ({eta})")
+            .progress_chars("#>-"));
+
+        let mut buf = Vec::new();
+        let mut reader = request.into_reader();
+
+        loop {
+            let mut buffer = vec![0; chunk_size];
+            let bcount = reader.read(&mut buffer[..])?;
+            buffer.truncate(bcount);
+            if buffer.is_empty() {
+                break;
+            } else {
+                buf.extend(buffer.into_boxed_slice().into_vec().iter().copied());
+                pb.inc(bcount as _);
+            }
+        }
+
+        pb.finish();
+        let unlustig = PathBuf::from(env::var("APPDATA")?).join("unlustig-rs");
+        std::fs::create_dir_all(&unlustig)?;
+        let mut file = File::create(&unlustig.join(fname))?;
+        file.write_all(&buf)?;
+
+        Ok(())
+    }
 }
