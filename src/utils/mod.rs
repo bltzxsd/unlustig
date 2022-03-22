@@ -2,14 +2,18 @@
 //!
 //! The `crate::utils` module contains common functions, and enums.
 
-use anyhow::Context;
-use indicatif::{ProgressBar, ProgressStyle};
-use log::info;
 #[cfg(windows)]
-use log::warn;
+use anyhow::Context;
+#[cfg(windows)]
+use indicatif::{ProgressBar, ProgressStyle};
+#[cfg(windows)]
+use log::{info, warn};
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
+#[cfg(windows)]
 use std::{fs::File, io::Write};
-use std::{env, io::Read, iter, path::PathBuf};
+#[cfg(windows)] 
+use std::env;
+use std::{io::Read, iter, path::PathBuf};
 
 #[cfg(windows)]
 type Result<T> = std::result::Result<T, anyhow::Error>;

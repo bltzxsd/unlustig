@@ -31,7 +31,7 @@ mod utils;
 
 fn main() {
     pretty_env_logger::init();
-    #[cfg(windows)]
+    
     if let Err(e) = check_updates() {
         warn!("failure checking updates: {e}");
     }
