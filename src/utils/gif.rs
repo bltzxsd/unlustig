@@ -6,15 +6,15 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use colored::Colorize;
 use image::{
-    gif::{GifDecoder, GifEncoder},
+    codecs::gif::{GifDecoder, GifEncoder},
     AnimationDecoder, GenericImage, ImageBuffer, ImageDecoder,
 };
 use log::{info, warn};
 use rayon::iter::{IntoParallelRefMutIterator, ParallelIterator};
 use rusttype::Font;
 use utils::DepTy;
+use yansi::Paint;
 
 use crate::utils::{
     self, appdata_init,
@@ -59,7 +59,7 @@ impl Gifsicle {
             args.push(format!("-{}", v));
         }
         if let Some(l) = lossy {
-            args.push(format!("--lossy={}", l));
+            args.push(format!("--lossy={l}"));
         }
         if reduce {
             args.push("--colors".into());
@@ -71,7 +71,10 @@ impl Gifsicle {
         }
         info!("Optimization is enabled. Optimizing GIF...");
         info!("GIF optimization may take some time.");
-        Command::new(self.exe).args(args).spawn()?;
+        Command::new(self.exe)
+            .args(args)
+            .spawn()
+            .context("could not spawn gifsicle")?;
         info!("The optimization will be complete when the terminal window closes.");
         Ok(())
     }
@@ -93,9 +96,9 @@ pub fn process_gif(
     info!("Creating caption image...");
     let image = TextImage::new(init, text).render()?;
 
-    info!("{}", "Caption image created!".green());
+    info!("{}", Paint::green("Caption image created!"));
     let mut frames = decoder.into_frames().collect_frames()?;
-    info!("{}", "Rendering GIF...".blue());
+    info!("{}", Paint::blue("Rendering GIF..."));
     frames.par_iter_mut().for_each(|f| {
         let f = f.buffer_mut();
         let mut buffer = ImageBuffer::new(gif_w, gif_h + image.height());
@@ -113,7 +116,7 @@ pub fn process_gif(
     let (output, output_path) = file_and_path(out_path, name, overwrite)?;
 
     let mut encoder = GifEncoder::new_with_speed(&output, 30);
-    encoder.set_repeat(image::gif::Repeat::Infinite)?;
+    encoder.set_repeat(image::codecs::gif::Repeat::Infinite)?;
     encoder.encode_frames(frames)?;
     let outputname = &output_path
         .file_name()
@@ -122,9 +125,8 @@ pub fn process_gif(
         .context("output-name was not valid utf-8")?;
 
     info!(
-        "GIF: {} {} at {}",
-        outputname,
-        "generated".green(),
+        "GIF: {outputname} {} at {}",
+        Paint::green("generated"),
         out_path
             .to_str()
             .context("invalid output path (not utf-8)")?,

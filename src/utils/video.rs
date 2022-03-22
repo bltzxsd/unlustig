@@ -5,10 +5,10 @@ use std::{
 };
 
 use anyhow::{Context, Result};
-use colored::Colorize;
 use image::GenericImageView;
 use log::{info, warn};
 use rusttype::Font;
+use yansi::Paint;
 
 use crate::{
     error::ErrorKind,
@@ -20,7 +20,7 @@ use crate::{
 
 use super::{appdata_init, random_name};
 
-/// [`FFmpeg`] contains the path to the [FFmpeg](https://www.ffmpeg.org/) program.
+/// [`FFmpeg`] contains the path to the [`FFmpeg`](https://www.ffmpeg.org/) program.
 pub struct FFmpeg {
     exe: PathBuf,
     input: PathBuf,
@@ -95,7 +95,7 @@ impl FFmpeg {
         caption_name.push_str(".jpg");
         let caption_location = std::env::temp_dir().join(caption_name);
         image.save(&caption_location)?;
-        info!("{}", "Caption image created!".green());
+        info!("{}", Paint::green("Caption image created!"));
 
         let caption_height = image.dimensions().1;
         let (video_width, video_height) = self.dimensions()?;
@@ -114,10 +114,8 @@ impl FFmpeg {
         let filter_complex = [
             "-filter_complex".into(),
             format!(
-                "[0:v]pad={}:{}:0:{}[a];[a][1:v]overlay=0:0,setsar=1",
-                video_width,
+                "[0:v]pad={video_width}:{}:0:{caption_height}[a];[a][1:v]overlay=0:0,setsar=1",
                 video_height + caption_height,
-                caption_height
             ),
         ];
 
