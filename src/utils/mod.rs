@@ -11,6 +11,7 @@ use rand::{distributions::Alphanumeric, thread_rng, Rng};
 use std::{fs::File, io::Write};
 use std::{env, io::Read, iter, path::PathBuf};
 
+#[cfg(windows)]
 type Result<T> = std::result::Result<T, anyhow::Error>;
 
 #[cfg(unix)]
@@ -106,6 +107,7 @@ pub fn random_name() -> String {
 }
 
 impl DepTy {
+    #[cfg(windows)]
     /// Downloads the specified dependency.
     pub fn download(&self) -> Result<()> {
         let url = match *self {
