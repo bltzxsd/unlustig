@@ -5,31 +5,31 @@ edition = "2021"
 authors = ["blitzxd"]
 homepage = "https://github.com/bltzxsd/unlustig"
 repository = "https://github.com/bltzxsd/unlustig"
-
 description = "iFunny GIF Caption maker, but this time, made using Rust."
 license = "MIT"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0.55"
 clap = { version = "3.1.6", features = ["derive", "cargo"] } 
-yansi = "0.5.0"
+dirs = "4.0.0"
+discord-rich-presence = { git = "https://github.com/bltzxsd/discord-rich-presence" }
+human_bytes = "0.3.1"
 image = "0.24.1"
 imageproc = { git = "https://github.com/image-rs/imageproc", version = '0.22.0' } 
+indicatif = "0.16.2"
 klask = "1.0.0"
 log = "0.4.14"
 pretty_env_logger = "0.4.0"
 rand = "0.8.5"
 rayon = "1.5.1"
 rusttype = "0.9.2"
-thiserror = "1.0.30"
-discord-rich-presence = { git = "https://github.com/bltzxsd/discord-rich-presence" }
-dirs = "4.0.0"
-indicatif = "0.16.2"
-ureq = "2.4.0"
-human_bytes = "0.3.1"
-serde_json = "1.0.79"
 semver = "1.0.6"
+serde_json = "1.0.79"
+thiserror = "1.0.30"
+ureq = "2.4.0"
+yansi = "0.5.0"
 
 [target.'cfg(unix)'.dependencies]
 which = "4.2.4"
