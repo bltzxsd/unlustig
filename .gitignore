@@ -2,3 +2,5 @@
 wix/
 PKGBUILD
 *.gz
+icon.png
+Product.ico
