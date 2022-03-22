@@ -63,17 +63,7 @@ pub struct TextImage {
 impl TextImage {
     /// Create a new [`TextImage`] to be used to image captioning.
     pub fn new(init: SetUp, text: &str) -> Self {
-        let split_texts: Vec<Vec<_>> = text
-            .split('\n')
-            .map(|s| s.split_whitespace().collect())
-            .collect();
-        let scale = init.scale();
-
-        let text = Self::wrap_text(
-            &Self::sum_until_fit(scale, init.font(), init.gif_w as i32, &split_texts),
-            &split_texts,
-        );
-
+        let text = text.wrap(&init);
         Self { init, text }
     }
 
@@ -156,10 +146,10 @@ impl TextImage {
     ) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
         // rounding up because ffmpeg doesnt
         // play well with non-even numbers in resolutions
-        let image_h = if image_h % 2 != 0 {
-            image_h + 1
-        } else {
+        let image_h = if image_h % 2 == 0 {
             image_h
+        } else {
+            image_h + 1
         };
         image::imageops::resize(
             image,
@@ -184,7 +174,7 @@ impl TextImage {
             ((bg_w - img_w) / 2, (bg_h - img_h) / 2)
         };
 
-        image::imageops::overlay(&mut bg, buffer, x as _, y as _);
+        image::imageops::overlay(&mut bg, buffer, x.into(), y.into());
         bg
     }
 
@@ -221,81 +211,9 @@ impl TextImage {
         Ok(imgbuf)
     }
 
-    /// Wraps text in accodance to the input image width.
-    ///
-    /// Returns a `Vec<Vec<usize>>` with indexes of where the splits should occur.
-    /// This function can handle manual newlines when they are in separate vectors:
-    ///
-    /// ```no_run
-    /// let text = "insert here\nsomething generic";
-    /// ```
-    /// Split and collect at newline and words:
-    /// ```no_run
-    /// let split_texts: Vec<Vec<_>> = text
-    ///     .iter()
-    ///     .map(|str| str.split_whitespace().collect())
-    ///     .collect();
-    /// ```
-    /// This is now looks like this:
-    /// ```no_run
-    /// let text = vec![
-    ///     [  "insert", "here" ], // these two internal vectors are seperated due to a newline
-    ///     [  "something", "generic" ]
-    /// ];
-    /// ```
-    /// Now, `text` can be passed into the function to create indices where splits should occur.
-    pub fn sum_until_fit(
-        scale: Scale,
-        font: &Font,
-        image_width: i32,
-        split_texts: &[Vec<&str>],
-    ) -> Vec<Vec<usize>> {
-        let mut split_at = vec![];
-        for elem in split_texts {
-            let mut accumulator = 0;
-            let str_widths: Vec<i32> = elem
-                .iter()
-                .map(|text| text_size(scale, font, text).0)
-                .collect();
-
-            let mut tempvec = Vec::with_capacity(str_widths.len() + 1);
-            for x in 0..str_widths.len() {
-                if str_widths[accumulator..x + 1].iter().sum::<i32>() > image_width {
-                    tempvec.push(x);
-                    accumulator = x;
-                }
-            }
-
-            tempvec.push(str_widths.len());
-            split_at.push(tempvec);
-        }
-        split_at
-    }
-
     /// Helper function to return the npercent of the text to be resized.
     fn npercent(current_width: u32, target_width: u32) -> u32 {
         (current_width as f32 * (target_width as f32 / current_width as f32)) as u32
-    }
-
-    /// Splits the given texts into multiple [`String`]s.
-    ///
-    /// These strings are split according to the given splits.
-    /// See also: [`sum_until_fit()`]
-    ///
-    /// [`sum_until_fit()`]: crate::utils::image::TextImage::sum_until_fit()
-    pub fn wrap_text(splits: &[Vec<usize>], texts: &[Vec<&str>]) -> Vec<String> {
-        let mut wrapped_strings = vec![];
-        let mut already_checked = 0;
-
-        for (text, split) in texts.iter().zip(splits) {
-            for pos in split {
-                let string = text[already_checked..*pos].join(" ");
-                wrapped_strings.push(string);
-                already_checked = *pos;
-            }
-            already_checked = 0;
-        }
-        wrapped_strings
     }
 }
 
@@ -308,4 +226,33 @@ fn blank_buffer_new(w: u32, h: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
         px.0 = [255, 255, 255, 255];
     }
     image
+}
+
+/// Implements text wrap with the greedy algorithm.
+trait Wrap {
+    /// Wraps text.
+    fn wrap(&self, setup: &SetUp) -> Vec<String>;
+}
+
+impl Wrap for &str {
+    fn wrap(&self, setup: &SetUp) -> Vec<String> {
+        let widthcalc = |text: &str| text_size(setup.scale, &setup.font, text).0;
+        let letter_width = widthcalc("W");
+        let mut space_left = setup.gif_w as i32;
+        let mut line = String::new();
+        for sentence in self.split('\n') {
+            for word in sentence.split_whitespace() {
+                if widthcalc(word) + letter_width > space_left {
+                    line.push('\n'); // line break char
+                    space_left = setup.gif_w as i32 - widthcalc(word);
+                } else {
+                    space_left -= widthcalc(word) + letter_width;
+                }
+                let s = word.trim().to_owned() + " ";
+                line.push_str(&s);
+            }
+        }
+
+        line.split('\n').map(ToOwned::to_owned).collect()
+    }
 }
