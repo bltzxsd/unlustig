@@ -12,8 +12,8 @@ use rand::{distributions::Alphanumeric, thread_rng, Rng};
 #[cfg(windows)]
 use std::{fs::File, io::Write};
 #[cfg(windows)] 
-use std::env;
-use std::{io::Read, iter, path::PathBuf};
+use std::{env, io::Read};
+use std::{iter, path::PathBuf};
 
 #[cfg(windows)]
 type Result<T> = std::result::Result<T, anyhow::Error>;
