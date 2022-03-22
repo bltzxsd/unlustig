@@ -10,9 +10,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use log::{info, warn};
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 #[cfg(windows)]
-use std::{fs::File, io::Write};
-#[cfg(windows)] 
-use std::{env, io::Read};
+use std::{fs::File, io::Write, env, io::Read};
 use std::{iter, path::PathBuf};
 
 #[cfg(windows)]
