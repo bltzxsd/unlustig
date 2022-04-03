@@ -120,16 +120,16 @@ fn check_updates() -> Result<()> {
         .replace(&['\"', 'v'][..], "");
     let (curr_ver, web_ver): (Version, Version) =
         (clap::crate_version!().parse()?, git_tag.parse()?);
-    if curr_ver < web_ver {
-        warn!(
+
+    match curr_ver.cmp(&web_ver) {
+        std::cmp::Ordering::Greater => warn!(":face_with_raised_eyebrow:"),
+        std::cmp::Ordering::Less => warn!(
             "{}\n{}",
             Paint::red("unlustig is out of date!").bold(),
             "Update here: https://github.com/bltzxsd/unlustig/releases/latest"
-        )
-    } else if curr_ver > web_ver {
-        warn!(":face_with_raised_eyebrow:")
+        ),
+        _ => {}
     }
-
     Ok(())
 }
 
