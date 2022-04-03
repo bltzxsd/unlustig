@@ -10,7 +10,7 @@ use indicatif::{ProgressBar, ProgressStyle};
 use log::{info, warn};
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 #[cfg(windows)]
-use std::{fs::File, io::Write, env, io::Read};
+use std::{env, fs::File, io::Read, io::Write};
 use std::{iter, path::PathBuf};
 
 #[cfg(windows)]
@@ -123,7 +123,7 @@ impl DepTy {
 
         let size: u64 = request
             .header("content-length")
-            .context("could not get download size")?
+            .context("failed to get download size")?
             .parse()?;
 
         let fname = url.split('/').last().unwrap_or("unknown");
