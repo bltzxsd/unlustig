@@ -112,24 +112,22 @@ pub fn process_gif(
 
         *f = buffer;
     });
-
-    let (output, output_path) = file_and_path(out_path, name, overwrite)?;
+    let out_path = cli.output()?;
+    let (output, output_path) = file_and_path(&out_path, &cli.name()?, cli.overwrites())?;
 
     let mut encoder = GifEncoder::new_with_speed(&output, 30);
     encoder.set_repeat(image::codecs::gif::Repeat::Infinite)?;
     encoder.encode_frames(frames)?;
     let outputname = &output_path
         .file_name()
-        .context("output file path does not exist.")?
+        .context("output path does not exist.")?
         .to_str()
-        .context("output-name was not valid utf-8")?;
+        .context("output name is not valid utf-8")?;
 
     info!(
         "GIF: {outputname} {} at {}",
         Paint::green("generated"),
-        out_path
-            .to_str()
-            .context("invalid output path (not utf-8)")?,
+        out_path.to_str().context("output path is not utf-8")?,
     );
 
     let opt = cli.opt_level().map(ToOwned::to_owned);
