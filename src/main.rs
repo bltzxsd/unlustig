@@ -11,7 +11,7 @@ use std::fs::OpenOptions;
 use anyhow::{Context, Result};
 
 use klask::Settings;
-use log::{error, warn};
+use log::{debug, error, info, warn};
 
 use rich_presence::Discord;
 use rusttype::Font;
@@ -30,13 +30,16 @@ mod rich_presence;
 mod utils;
 
 fn main() {
-    pretty_env_logger::init();
-    
+    simple_logger::SimpleLogger::new()
+        .with_level(log::LevelFilter::Info)
+        .init()
+        .expect("failed to start logger");
+
     if let Err(e) = check_updates() {
-        warn!("failure checking updates: {e}");
+        debug!("Failed to check for updates: {e}")
     }
     if let Err(e) = Discord::init(include_str!("RPC_ID")) {
-        warn!("failed discord RPC initialization: {}", e);
+        debug!("failed discord RPC initialization: {e}");
     };
 
     #[cfg(unix)]

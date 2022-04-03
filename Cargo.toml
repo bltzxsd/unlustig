@@ -1,6 +1,6 @@
 [package]
 name = "unlustig"
-version = "0.0.13"
+version = "0.0.14"
 edition = "2021"
 authors = ["blitzxd"]
 homepage = "https://github.com/bltzxsd/unlustig"
@@ -21,12 +21,12 @@ imageproc = { git = "https://github.com/image-rs/imageproc", version = '0.22.0' 
 indicatif = "0.16.2"
 klask = "1.0.0"
 log = "0.4.14"
-pretty_env_logger = "0.4.0"
 rand = "0.8.5"
 rayon = "1.5.1"
 rusttype = "0.9.2"
 semver = "1.0.6"
 serde_json = "1.0.79"
+simple_logger = { version = "2.1.0", default-features = false, features = ["colors", "stderr"] }
 thiserror = "1.0.30"
 ureq = "2.4.0"
 yansi = "0.5.0"
