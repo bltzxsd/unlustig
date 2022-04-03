@@ -34,7 +34,6 @@ impl FFmpeg {
     ///
     /// [`utils::appdata()`]: crate::utils
     pub fn init(input: PathBuf) -> Result<Self> {
-        info!("Note: Optimization flags do not work on media files.");
         let exe = appdata_init(DepTy::Ffmpeg)?;
         Ok(Self { exe, input })
     }
@@ -50,11 +49,13 @@ impl FFmpeg {
         let mut name = random_name();
         name.push_str(".jpg");
         let file = temp_dir.join(name);
-        let file_str = file.to_str().context("could not convert path to str")?;
-        let input = self
-            .input
+        let file_str = file
             .to_str()
-            .context("could not get string from os")?;
+            .context(format!("failed to convert path to str: {}", file.display()))?;
+        let input = self.input.to_str().context(format!(
+            "failed to convert path to str: {}",
+            self.input.display()
+        ))?;
         // ffmpeg -ss 0.1 -i .\cat.mp4 -vframes 1 -f image2 imagefile.jpg
         #[rustfmt::skip]
         let args = [
@@ -63,7 +64,11 @@ impl FFmpeg {
             "-vframes", "1", "-f", "image2", file_str,
         ];
 
-        Command::new(&self.exe).args(&args).spawn()?.wait()?;
+        Command::new(&self.exe)
+            .args(&args)
+            .spawn()
+            .context("failed to start ffmpeg")?
+            .wait()?;
         Ok(image::open(file)?.dimensions())
     }
 
@@ -107,9 +112,15 @@ impl FFmpeg {
 
         let input_args = [
             "-i",
-            self.input.to_str().context("cannot convert to str")?,
+            self.input.to_str().context(format!(
+                "failed to convert input arg to str: {}",
+                self.input.display()
+            ))?,
             "-i",
-            caption_location.to_str().context("cannot convert to str")?,
+            caption_location.to_str().context(format!(
+                "failed to convert input arg to str: {}",
+                caption_location.display()
+            ))?,
         ];
         let filter_complex = [
             "-filter_complex".into(),
@@ -135,7 +146,10 @@ impl FFmpeg {
         let end_args = [
             "-c:a",
             "copy",
-            output.to_str().context("cannot convert from path to str")?,
+            output.to_str().context(format!(
+                "failed to convert output arg to str: {}",
+                output.display()
+            ))?,
         ];
 
         Command::new(&self.exe)
@@ -159,10 +173,12 @@ impl FFmpeg {
 pub fn validate_format(path: &Path) -> Result<MediaType> {
     match path
         .extension()
-        .context("could not get extension")?
+        .context(format!("failed to get file extension: {}", path.display()))?
         .to_str()
-        .context("could not convert osstr to str")?
-    {
+        .context(format!(
+            "failed to convert Path->OsStr to str: {}",
+            path.display()
+        ))? {
         "mp4" => Ok(MediaType::Mp4),
         "avi" => Ok(MediaType::Avi),
         "mkv" => Ok(MediaType::Mkv),

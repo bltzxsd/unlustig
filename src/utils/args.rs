@@ -195,7 +195,7 @@ impl Cli {
                 Some(path) => Ok(path),
                 None => Err(
                     anyhow::Error::from(io::Error::from(io::ErrorKind::NotFound))
-                        .context("the default pictures folder was not found"),
+                        .context("default pictures folder was not found"),
                 ),
             },
         }
