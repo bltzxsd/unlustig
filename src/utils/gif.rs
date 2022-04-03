@@ -74,27 +74,19 @@ impl Gifsicle {
         Command::new(self.exe)
             .args(args)
             .spawn()
-            .context("could not spawn gifsicle")?;
+            .context("failed to start gifsicle")?;
         info!("The optimization will be complete when the terminal window closes.");
         Ok(())
     }
 }
 
 /// Creates the gifcaption.
-pub fn process_gif(
-    gif: File,
-    font: Font<'static>,
-    text: &str,
-    out_path: &Path,
-    name: &str,
-    cli: &Cli,
-    overwrite: bool,
-) -> Result<(), anyhow::Error> {
+pub fn process_gif(gif: File, font: Font<'static>, cli: &Cli) -> Result<(), anyhow::Error> {
     let decoder = GifDecoder::new(gif)?;
     let (gif_w, gif_h) = decoder.dimensions();
     let init = SetUp::init(font).with_dimensions(gif_w, gif_h);
     info!("Creating caption image...");
-    let image = TextImage::new(init, text).render()?;
+    let image = TextImage::new(init, cli.text()).render()?;
 
     info!("{}", Paint::green("Caption image created!"));
     let mut frames = decoder.into_frames().collect_frames()?;

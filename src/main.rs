@@ -45,7 +45,7 @@ fn main() {
     #[cfg(unix)]
     match ProgramMode::check() {
         ProgramMode::Cli => {
-            if let Err(err) = run(&<Cli as clap::StructOpt>::parse()) {
+            if let Err(err) = Cli::parse().run() {
                 error!("{:?}", err);
             }
         }
@@ -56,7 +56,7 @@ fn main() {
             };
 
             klask::run_derived::<Cli, _>(settings, |cli| {
-                if let Err(err) = run(&cli) {
+                if let Err(err) = cli.run() {
                     error!("{:?}", err);
                 }
             });
@@ -71,44 +71,55 @@ fn main() {
         };
 
         klask::run_derived::<Cli, _>(settings, |cli| {
-            if let Err(err) = run(&cli) {
+            if let Err(err) = cli.run() {
                 error!("{:?}", err);
             }
         });
     }
 }
 
-/// Main logic.
-fn run(cli: &Cli) -> Result<()> {
-    let font = Font::try_from_bytes(include_bytes!("../font/ifunny.otf"))
-        .context("font could not be read")?;
+impl Cli {
+    /// Main logic.
+    fn run(&self) -> Result<()> {
+        let font = Font::try_from_bytes(include_bytes!("../font/ifunny.otf"))
+            .context("failed to read font")?;
 
-    let (text, out_path, name, overwrite) =
-        (cli.text(), cli.output()?, cli.name()?, cli.overwrites());
+        let (text, out_path, name, overwrite) =
+            (self.text(), self.output()?, self.name()?, self.overwrites());
 
-    if let Ok((file_path, file_ty)) = cli.media() {
-        let file = OpenOptions::new().read(true).open(&file_path)?;
-        match file_ty {
-            MediaType::Mp4 | MediaType::Avi | MediaType::Mkv | MediaType::Webm => {
-                FFmpeg::init(file_path)?.process_media(font, text, &out_path, &name, overwrite)?;
+        if let Ok((file_path, file_ty)) = self.media() {
+            let file = OpenOptions::new().read(true).open(&file_path)?;
+            match file_ty {
+                MediaType::Mp4 | MediaType::Avi | MediaType::Mkv | MediaType::Webm => {
+                    if self.overwrites()
+                        || self.reduce()
+                        || self.lossy().is_some()
+                        || self.opt_level().is_some()
+                    {
+                        info!("Optimization flags only work on GIFs.");
+                    }
+
+                    FFmpeg::init(file_path)?
+                        .process_media(font, text, &out_path, &name, overwrite)?;
+                }
+
+                MediaType::Gif => process_gif(file, font, self)?,
             }
-
-            MediaType::Gif => process_gif(file, font, text, &out_path, &name, cli, overwrite)?,
         }
+
+        #[cfg(windows)]
+        std::process::Command::new("explorer.exe")
+            .arg(out_path)
+            .spawn()?;
+
+        // Opening File Manager with UNIX is not tested.
+        #[cfg(unix)]
+        std::process::Command::new("xdg-open")
+            .arg(out_path)
+            .spawn()?;
+
+        Ok(())
     }
-
-    #[cfg(windows)]
-    std::process::Command::new("explorer.exe")
-        .arg(out_path)
-        .spawn()?;
-
-    // Opening File Manager with UNIX is not tested.
-    #[cfg(unix)]
-    std::process::Command::new("xdg-open")
-        .arg(out_path)
-        .spawn()?;
-
-    Ok(())
 }
 
 fn check_updates() -> Result<()> {
