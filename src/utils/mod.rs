@@ -145,11 +145,11 @@ impl DepTy {
             let mut buffer = vec![0; chunk_size];
             let bcount = reader.read(&mut buffer[..])?;
             buffer.truncate(bcount);
-            if buffer.is_empty() {
-                break;
-            } else {
+            if !buffer.is_empty() {
                 buf.extend(buffer.into_boxed_slice().into_vec().iter().copied());
                 pb.inc(bcount as _);
+            } else {
+                break;
             }
         }
 
