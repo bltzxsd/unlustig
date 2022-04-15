@@ -172,8 +172,8 @@ impl Cli {
     ///
     /// # Option
     /// Returns `None` if no optimization level was specified.
-    pub fn opt_level(&self) -> Option<&String> {
-        self.optimization.as_ref()
+    pub fn opt_level(&self) -> Option<&str> {
+        self.optimization.as_deref()
     }
 
     /// Returns the directory where the output should be saved.
