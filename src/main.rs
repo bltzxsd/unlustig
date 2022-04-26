@@ -42,16 +42,17 @@ fn main() {
         debug!("failed discord RPC initialization: {e}");
     };
 
+    let custom_font = include_bytes!("../font/mononoki-Regular.ttf");
     #[cfg(unix)]
     match ProgramMode::check() {
         ProgramMode::Cli => {
-            if let Err(err) = Cli::parse().run() {
+            if let Err(err) = <Cli as clap::Parser>::parse().run() {
                 error!("{:?}", err);
             }
         }
         ProgramMode::Gui => {
             let settings = Settings {
-                custom_font: Some(include_bytes!("../font/mononoki-Regular.ttf")),
+                custom_font: Some(custom_font),
                 ..Settings::default()
             };
 
@@ -66,7 +67,7 @@ fn main() {
     #[cfg(windows)]
     {
         let settings = Settings {
-            custom_font: Some(include_bytes!("../font/mononoki-Regular.ttf")),
+            custom_font: Some(custom_font),
             ..Settings::default()
         };
 
@@ -89,17 +90,13 @@ impl Cli {
 
         if let Ok((file_path, file_ty)) = self.media() {
             let file = OpenOptions::new().read(true).open(&file_path)?;
-            match file_ty {
-                MediaType::Mp4 | MediaType::Avi | MediaType::Mkv | MediaType::Webm => {
-                    if self.reduce() || self.lossy().is_some() || self.opt_level().is_some() {
-                        info!("Optimization flags only work on GIFs.");
-                    }
-
-                    FFmpeg::init(file_path)?
-                        .process_media(font, text, &out_path, &name, overwrite)?;
+            if let MediaType::Gif = file_ty {
+                process_gif(file, font, self)?
+            } else {
+                if self.reduce() || self.lossy().is_some() || self.opt_level().is_some() {
+                    info!("Optimization flags only work on GIFs.");
                 }
-
-                MediaType::Gif => process_gif(file, font, self)?,
+                FFmpeg::init(file_path)?.process_media(font, text, &out_path, &name, overwrite)?;
             }
         }
 
