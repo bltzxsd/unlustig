@@ -20,8 +20,6 @@ use std::{
 type Result<T> = std::result::Result<T, anyhow::Error>;
 
 use crate::error::ErrorKind;
-#[cfg(unix)]
-use crate::error::ErrorKind;
 
 /// Argument handling with [`Clap`].
 ///
