@@ -1,6 +1,5 @@
 use std::{
     env,
-    os::windows::process::CommandExt,
     path::{Path, PathBuf},
     process::Command,
 };
@@ -154,6 +153,8 @@ impl FFmpeg {
         let mut command = Command::new(&self.exe);
 
         let command = if cfg!(windows) {
+            #[cfg(windows)]
+            use std::os::windows::process::CommandExt;
             command.creation_flags(0x08000000).args(&base_args)
         } else {
             command.args(&base_args)
