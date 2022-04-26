@@ -166,7 +166,9 @@ impl TextImage {
         buffer: &ImageBuffer<Rgba<u8>, Vec<u8>>,
         gif_w: u32,
     ) -> image::ImageBuffer<Rgba<u8>, Vec<u8>> {
-        let mut bg = blank_buffer_new(gif_w, buffer.height() as _);
+        let gif_w = gif_w as f32 * 1.2;
+        let buffer_height = buffer.height() as f32 * 1.2;
+        let mut bg = new_white_buffer(gif_w as _, buffer_height as _);
 
         let (x, y) = {
             let (bg_h, bg_w) = (bg.height() as i32, bg.width() as i32);
@@ -217,11 +219,9 @@ impl TextImage {
     }
 }
 
-/// Create a new white image buffer. The returned [`ImageBuffer`] will
-/// have a size 1.2 times the given width and height.
-fn blank_buffer_new(w: u32, h: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
-    let mut image: ImageBuffer<Rgba<u8>, Vec<u8>> =
-        ImageBuffer::new((w as f32 * 1.2) as u32, (h as f32 * 1.2) as u32);
+/// Create a new white image buffer.
+fn new_white_buffer(w: u32, h: u32) -> ImageBuffer<Rgba<u8>, Vec<u8>> {
+    let mut image: ImageBuffer<Rgba<u8>, Vec<u8>> = ImageBuffer::new(w, h);
     for px in image.pixels_mut() {
         px.0 = [255, 255, 255, 255];
     }
