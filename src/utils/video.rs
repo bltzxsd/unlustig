@@ -15,6 +15,9 @@ use crate::utils::{
     DepTy,
 };
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
+
 use super::{appdata_init, random_name};
 
 /// [`FFmpeg`] contains the path to the [`FFmpeg`](https://www.ffmpeg.org/) program.
@@ -60,8 +63,12 @@ impl FFmpeg {
             "-y", "-ss", "0.1", "-i", input,
             "-vframes", "1", "-f", "image2", file_str,
         ];
+        let mut command = Command::new(&self.exe);
+        
+        #[cfg(windows)]
+        let command = command.creation_flags(0x08000000);
 
-        Command::new(&self.exe)
+        command
             .args(&args)
             .spawn()
             .context("failed to start ffmpeg")?
@@ -152,16 +159,12 @@ impl FFmpeg {
 
         let mut command = Command::new(&self.exe);
 
-        let command = if cfg!(windows) {
-            #[cfg(windows)]
-            use std::os::windows::process::CommandExt;
-            command.creation_flags(0x08000000).args(&base_args)
-        } else {
-            command.args(&base_args)
-        };
+        #[cfg(windows)]
+        let command = command.creation_flags(0x08000000);
 
         info!("{}", Paint::blue("Rendering Media..."));
         command
+            .args(base_args)
             .args(input_args)
             .args(filter_complex)
             .args(end_args)

@@ -76,12 +76,10 @@ impl Gifsicle {
         info!("Optimization is enabled. Optimizing GIF...\nThis might take a while.");
 
         let mut command = Command::new(self.exe);
-        let command = if cfg!(windows) {
-            command.creation_flags(0x0800000).args(args)
-        } else {
-            command.args(args)
-        };
+        #[cfg(windows)]
+        let command = command.creation_flags(0x0800000);
         command
+            .args(args)
             .spawn()
             .context("failed to start gifsicle")?
             .wait()
