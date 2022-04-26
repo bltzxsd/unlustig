@@ -16,7 +16,6 @@ use std::{
     path::{Path, PathBuf},
 };
 
-#[cfg(windows)]
 type Result<T> = std::result::Result<T, anyhow::Error>;
 
 use crate::error::ErrorKind;
