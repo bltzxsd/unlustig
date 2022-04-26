@@ -11,7 +11,7 @@ use std::fs::OpenOptions;
 use anyhow::{Context, Result};
 
 use klask::Settings;
-use log::{debug, error, info, warn};
+use log::{debug, error, info, trace, warn};
 
 use rich_presence::Discord;
 use rusttype::Font;
@@ -21,13 +21,13 @@ use utils::{args::Cli, gif::process_gif, video::FFmpeg, MediaType};
 use yansi::Paint;
 
 /// Error module.
-pub(crate) mod error;
+pub mod error;
 
 /// Rich Presence module.
 mod rich_presence;
 
 /// Utility module.
-mod utils;
+pub mod utils;
 
 fn main() {
     simple_logger::SimpleLogger::new()
@@ -38,7 +38,7 @@ fn main() {
     if let Err(e) = check_updates() {
         debug!("Failed to check for updates: {e}")
     }
-    if let Err(e) = Discord::init(include_str!("RPC_ID")) {
+    if let Err(e) = Discord::init("930897511743356950") {
         debug!("failed discord RPC initialization: {e}");
     };
 
@@ -129,13 +129,12 @@ fn check_updates() -> Result<()> {
         (clap::crate_version!().parse()?, git_tag.parse()?);
 
     match curr_ver.cmp(&web_ver) {
-        std::cmp::Ordering::Greater => warn!(":face_with_raised_eyebrow:"),
+        std::cmp::Ordering::Greater => debug!(":face_with_raised_eyebrow:"),
         std::cmp::Ordering::Less => warn!(
-            "{}\n{}",
+            "{}\nUpdate here: https://github.com/bltzxsd/unlustig/releases/latest",
             Paint::red("unlustig is out of date!").bold(),
-            "Update here: https://github.com/bltzxsd/unlustig/releases/latest"
         ),
-        _ => {}
+        std::cmp::Ordering::Equal => trace!("unlustig is up to date"),
     }
     Ok(())
 }
