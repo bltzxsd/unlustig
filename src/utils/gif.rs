@@ -1,7 +1,7 @@
 use std::{
     borrow::ToOwned,
     fs::File,
-    os::windows::process::CommandExt,
+
     path::{Path, PathBuf},
     process::Command,
 };
@@ -24,6 +24,8 @@ use crate::utils::{
     random_name,
 };
 
+#[cfg(windows)]
+use std::os::windows::process::CommandExt;
 /// Contains the path to the [Gifsicle](https://www.lcdf.org/gifsicle/) program.
 pub struct Gifsicle {
     exe: PathBuf,
