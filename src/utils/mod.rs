@@ -45,8 +45,10 @@ pub enum MediaType {
     Mkv,
     /// `.webm` files.
     Webm,
-    /// `.gif` files
+    /// `.gif` files.
     Gif,
+    /// `.mov` files.
+    Mov,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -190,6 +192,7 @@ pub fn validate_format(path: &Path) -> Result<MediaType> {
         "mkv" => Ok(MediaType::Mkv),
         "webm" => Ok(MediaType::Webm),
         "gif" => Ok(MediaType::Gif),
+        "mov" => Ok(MediaType::Mov),
         ext => Err(ErrorKind::UnsupportedMediaFormat(ext.to_string()).into()),
     }
 }

@@ -156,6 +156,7 @@ impl Cli {
             MediaType::Mkv => ".mkv",
             MediaType::Webm => ".webm",
             MediaType::Gif => ".gif",
+            MediaType::Mov => ".mov",
         };
         match &self.output_name {
             Some(string) => {
