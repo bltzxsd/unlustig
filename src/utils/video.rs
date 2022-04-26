@@ -1,5 +1,6 @@
 use std::{
     env,
+    os::windows::process::CommandExt,
     path::{Path, PathBuf},
     process::Command,
 };
@@ -150,13 +151,28 @@ impl FFmpeg {
             ))?,
         ];
 
-        Command::new(&self.exe)
-            .args(&base_args)
+        let mut command = Command::new(&self.exe);
+
+        let command = if cfg!(windows) {
+            command.creation_flags(0x08000000).args(&base_args)
+        } else {
+            command.args(&base_args)
+        };
+
+        info!("{}", Paint::blue("Rendering Media..."));
+        command
             .args(input_args)
             .args(filter_complex)
             .args(end_args)
-            .spawn()?;
+            .spawn()?
+            .wait()
+            .context("ffmpeg failed to start.")?;
 
+        info!(
+            "{} {name} at {}",
+            Paint::green("Created"),
+            out_path.to_str().context("output path is not utf-8")?,
+        );
         Ok(())
     }
 }

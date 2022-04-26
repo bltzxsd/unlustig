@@ -1,6 +1,7 @@
 use std::{
     borrow::ToOwned,
     fs::File,
+    os::windows::process::CommandExt,
     path::{Path, PathBuf},
     process::Command,
 };
@@ -72,13 +73,21 @@ impl Gifsicle {
         if args.len() == 4 {
             return Ok(());
         }
-        info!("Optimization is enabled. Optimizing GIF...");
-        info!("GIF optimization may take some time.");
-        Command::new(self.exe)
-            .args(args)
+        info!("Optimization is enabled. Optimizing GIF...\nThis might take a while.");
+
+        let mut command = Command::new(self.exe);
+        let command = if cfg!(windows) {
+            command.creation_flags(0x0800000).args(args)
+        } else {
+            command.args(args)
+        };
+        command
             .spawn()
-            .context("failed to start gifsicle")?;
-        info!("The optimization will be complete when the terminal window closes.");
+            .context("failed to start gifsicle")?
+            .wait()
+            .context("gifsicle failed to start")?;
+
+        info!("{}", Paint::green("Optimization complete."));
         Ok(())
     }
 }
@@ -121,8 +130,8 @@ pub fn process_gif(gif: File, font: Font<'static>, cli: &Cli) -> Result<(), anyh
         .context("output name is not valid utf-8")?;
 
     info!(
-        "GIF: {outputname} {} at {}",
-        Paint::green("generated"),
+        "{} {outputname} at {}",
+        Paint::green("Created"),
         out_path.to_str().context("output path is not utf-8")?,
     );
 
