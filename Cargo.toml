@@ -5,7 +5,7 @@ edition = "2021"
 authors = ["blitzxd"]
 homepage = "https://github.com/bltzxsd/unlustig"
 repository = "https://github.com/bltzxsd/unlustig"
-description = "iFunny GIF Caption maker, but this time, made using Rust."
+description = "GIF Caption tool."
 license = "MIT"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
