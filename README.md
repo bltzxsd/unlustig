@@ -14,12 +14,13 @@ Supported formats:
 - WebM
 - mov
 
-## Downloads
+## Download and Install
 
 You can download the latest release **[here](https://github.com/bltzxsd/unlustig/releases/latest)**.
 
 - Windows users can install the program using the `msi` installer or use the portable executable.
-- Arch users can download the PKGBUILD file and use an AUR helper. 
+- Arch users can download the `PKGBUILD` file and use an AUR helper. 
+- Users on Debian (or any of its derivatives like Ubuntu, can use the `.deb` package file to install the program.  
 
 ## Examples
 ![gif](https://media.discordapp.net/attachments/834076909557645335/929746951757496351/2VUqz.gif)
@@ -44,7 +45,7 @@ Gifsicle is used for GIF compression.
 
 FFmpeg is used for video processing.
 
-If Windows users do not have a dependency installed, the program will download an executable automatically.
+If Windows users do not have a dependency installed, the program will automatically download it.
 Linux users, if using optimization flags or mp4 media, *must* have [gifsicle](https://www.lcdf.org/gifsicle/) and/or [FFmpeg](https://www.ffmpeg.org/) installed and on their PATH.
 
 ## Contributing
