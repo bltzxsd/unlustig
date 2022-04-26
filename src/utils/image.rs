@@ -245,19 +245,21 @@ impl Wrap for &str {
         let letter_width = widthcalc("W");
         let mut space_left = setup.gif_w as i32;
         let mut line = String::new();
-        for sentence in self.split('\n') {
+
+        for sentence in self.split("\\n") {
+            line.push('\n');
             for word in sentence.split_whitespace() {
                 if widthcalc(word) + letter_width > space_left {
-                    line.push('\n'); // line break char
+                    line.push('\n'); // break line
                     space_left = setup.gif_w as i32 - widthcalc(word);
                 } else {
                     space_left -= widthcalc(word) + letter_width;
                 }
-                let s = word.trim().to_owned() + " ";
-                line.push_str(&s);
+                line.push_str(&format!("{} ", word.trim()));
             }
         }
 
-        line.split('\n').map(ToOwned::to_owned).collect()
+        // trim here because we need to get rid of the first '\n' at the start
+        line.trim().split('\n').map(ToOwned::to_owned).collect()
     }
 }
