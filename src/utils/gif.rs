@@ -24,8 +24,7 @@ use crate::utils::{
     random_name,
 };
 
-#[cfg(windows)]
-use std::os::windows::process::CommandExt;
+
 /// Contains the path to the [Gifsicle](https://www.lcdf.org/gifsicle/) program.
 pub struct Gifsicle {
     exe: PathBuf,
@@ -78,8 +77,7 @@ impl Gifsicle {
         info!("Optimization is enabled. Optimizing GIF...\nThis might take a while.");
 
         let mut command = Command::new(self.exe);
-        #[cfg(windows)]
-        let command = command.creation_flags(0x0800000);
+
         command
             .args(args)
             .spawn()

@@ -15,9 +15,6 @@ use crate::utils::{
     DepTy,
 };
 
-#[cfg(windows)]
-use std::os::windows::process::CommandExt;
-
 use super::{appdata_init, random_name};
 
 /// [`FFmpeg`] contains the path to the [`FFmpeg`](https://www.ffmpeg.org/) program.
@@ -64,9 +61,7 @@ impl FFmpeg {
             "-vframes", "1", "-f", "image2", file_str,
         ];
         let mut command = Command::new(&self.exe);
-        
-        #[cfg(windows)]
-        let command = command.creation_flags(0x08000000);
+
 
         command
             .args(&args)
@@ -159,8 +154,8 @@ impl FFmpeg {
 
         let mut command = Command::new(&self.exe);
 
-        #[cfg(windows)]
-        let command = command.creation_flags(0x08000000);
+        // #[cfg(windows)]
+        // let command = command.creation_flags(0x00000080);
 
         info!("{}", Paint::blue("Rendering Media..."));
         command
