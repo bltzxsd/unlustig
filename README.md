@@ -12,6 +12,7 @@ Supported formats:
 - AVI
 - MKV 
 - WebM
+- mov
 
 ## Downloads
 
