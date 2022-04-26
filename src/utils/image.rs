@@ -184,6 +184,11 @@ impl TextImage {
     ///
     /// This allows the program to draw individual lines at a time
     /// and stitch them together vertically.
+    ///
+    /// # Errors
+    /// Returns an [`ImageError`] if the image cannot be copied to the buffer.
+    ///
+    /// [`ImageError`]: image::error::ImageError
     pub fn v_concat<I, P, S>(images: &[I]) -> Result<ImageBuffer<P, Vec<S>>>
     where
         I: GenericImageView<Pixel = P>,
