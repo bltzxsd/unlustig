@@ -11,11 +11,15 @@ use log::{info, warn};
 use rand::{distributions::Alphanumeric, thread_rng, Rng};
 #[cfg(windows)]
 use std::{env, fs::File, io::Read, io::Write};
-use std::{iter, path::PathBuf};
+use std::{
+    iter,
+    path::{Path, PathBuf},
+};
 
 #[cfg(windows)]
 type Result<T> = std::result::Result<T, anyhow::Error>;
 
+use crate::error::ErrorKind;
 #[cfg(unix)]
 use crate::error::ErrorKind;
 
@@ -46,6 +50,7 @@ pub enum MediaType {
 }
 
 #[derive(Debug, Clone, Copy)]
+#[allow(missing_docs)]
 pub enum DepTy {
     Gifsicle,
     Ffmpeg,
@@ -63,7 +68,7 @@ impl std::fmt::Display for DepTy {
 
 /// Writes [`Gifsicle`] and [`FFmpeg`] to the appdata folder on Windows.
 ///
-/// # Result
+/// # Errors
 /// Returns an error if the `%appdata%` variable does not exist.
 ///
 /// [`Gifsicle`]: https://www.lcdf.org/gifsicle/
@@ -102,8 +107,7 @@ pub fn appdata_init(dep: DepTy) -> anyhow::Result<PathBuf> {
 pub fn random_name() -> String {
     let mut rng = thread_rng();
     iter::repeat(())
-        .map(|_| rng.sample(Alphanumeric))
-        .map(char::from)
+        .map(|_| char::from(rng.sample(Alphanumeric)))
         .take(5)
         .collect()
 }
@@ -111,6 +115,9 @@ pub fn random_name() -> String {
 impl DepTy {
     #[cfg(windows)]
     /// Downloads the specified dependency.
+    ///
+    /// # Errors
+    /// Returns an error if the download fails.
     pub fn download(&self) -> Result<()> {
         let url = match *self {
             DepTy::Gifsicle => {
@@ -160,5 +167,29 @@ impl DepTy {
         file.write_all(&buf)?;
 
         Ok(())
+    }
+}
+
+/// Validate file formats.
+///
+/// # Errors
+/// Returns [`UnsupportedMediaFormat`] if file is unsupported.
+///
+/// [`UnsupportedMediaFormat`]: crate::error::ErrorKind::UnsupportedMediaFormat
+pub fn validate_format(path: &Path) -> Result<MediaType> {
+    match path
+        .extension()
+        .context(format!("failed to get file extension: {}", path.display()))?
+        .to_str()
+        .context(format!(
+            "failed to convert Path->OsStr to str: {}",
+            path.display()
+        ))? {
+        "mp4" => Ok(MediaType::Mp4),
+        "avi" => Ok(MediaType::Avi),
+        "mkv" => Ok(MediaType::Mkv),
+        "webm" => Ok(MediaType::Webm),
+        "gif" => Ok(MediaType::Gif),
+        ext => Err(ErrorKind::UnsupportedMediaFormat(ext.to_string()).into()),
     }
 }

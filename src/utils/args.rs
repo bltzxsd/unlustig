@@ -1,4 +1,4 @@
-use crate::utils::{random_name, video::validate_format, MediaType};
+use crate::utils::{random_name, validate_format, MediaType};
 use anyhow::Result;
 use clap::{Parser, ValueHint};
 use std::{io, path::PathBuf};
@@ -130,7 +130,7 @@ impl Cli {
 
     /// Returns a tuple of the input media's [`Path`] and [`Type`]
     ///
-    /// # Result
+    /// # Errors
     /// Returns an [`UnsupportedMediaFormat`] error if
     /// the input file is unsupported.
     ///
@@ -143,9 +143,9 @@ impl Cli {
 
     /// Returns the name of the output media.
     ///
-    /// # Result
+    /// # Errors
     /// Returns an [`UnsupportedMediaFormat`] error if
-    /// /// the input file is unsupported.
+    /// the input file is unsupported.
     ///
     /// [`UnsupportedMediaFormat`]: crate::error::ErrorKind::UnsupportedMediaFormat
     pub fn name(&self) -> Result<String> {
@@ -171,7 +171,7 @@ impl Cli {
     /// Returns the Optimization level of output.
     ///
     /// # Option
-    /// Returns `None` if no optimization level was specified.
+    /// Returns [`None`] if no optimization level was specified.
     pub fn opt_level(&self) -> Option<&str> {
         self.optimization.as_deref()
     }
@@ -184,7 +184,7 @@ impl Cli {
     /// - On Unix: `/home/<username>/Pictures`
     /// - On Windows: `<drive>:\Users\<username>\Pictures`
     ///
-    /// # Result
+    /// # Errors
     /// Returns an [`NotFound`] error if the default pictures folder was not found.
     ///
     /// [`NotFound`]: std::io::ErrorKind::NotFound  

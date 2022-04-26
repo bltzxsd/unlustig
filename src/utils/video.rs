@@ -10,12 +10,9 @@ use log::{info, warn};
 use rusttype::Font;
 use yansi::Paint;
 
-use crate::{
-    error::ErrorKind,
-    utils::{
-        image::{SetUp, TextImage},
-        DepTy, MediaType,
-    },
+use crate::utils::{
+    image::{SetUp, TextImage},
+    DepTy,
 };
 
 use super::{appdata_init, random_name};
@@ -29,7 +26,7 @@ pub struct FFmpeg {
 impl FFmpeg {
     /// Returns [`FFmpeg`] that you can operate on.
     ///
-    /// # Result
+    /// # Errors
     /// Returns an error if [`utils::appdata()`] or [`env::var()`] fail.
     ///
     /// [`utils::appdata()`]: crate::utils
@@ -83,6 +80,7 @@ impl FFmpeg {
     /// [a][1:v]overlay=0:0,setsar=1" \
     /// -c:a copy output.mp4
     /// ```
+    #[allow(clippy::missing_errors_doc)]
     pub fn process_media(
         &mut self,
         font: Font<'static>,
@@ -160,30 +158,5 @@ impl FFmpeg {
             .spawn()?;
 
         Ok(())
-    }
-}
-
-/// Validate file formats.
-///
-/// # Errors
-///
-/// Returns [`UnsupportedMediaFormat`] if file is unsupported.
-///
-/// [`UnsupportedMediaFormat`]: crate::error::ErrorKind::UnsupportedMediaFormat
-pub fn validate_format(path: &Path) -> Result<MediaType> {
-    match path
-        .extension()
-        .context(format!("failed to get file extension: {}", path.display()))?
-        .to_str()
-        .context(format!(
-            "failed to convert Path->OsStr to str: {}",
-            path.display()
-        ))? {
-        "mp4" => Ok(MediaType::Mp4),
-        "avi" => Ok(MediaType::Avi),
-        "mkv" => Ok(MediaType::Mkv),
-        "webm" => Ok(MediaType::Webm),
-        "gif" => Ok(MediaType::Gif),
-        ext => Err(ErrorKind::UnsupportedMediaFormat(ext.to_string()).into()),
     }
 }
