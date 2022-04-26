@@ -91,11 +91,7 @@ impl Cli {
             let file = OpenOptions::new().read(true).open(&file_path)?;
             match file_ty {
                 MediaType::Mp4 | MediaType::Avi | MediaType::Mkv | MediaType::Webm => {
-                    if self.overwrites()
-                        || self.reduce()
-                        || self.lossy().is_some()
-                        || self.opt_level().is_some()
-                    {
+                    if self.reduce() || self.lossy().is_some() || self.opt_level().is_some() {
                         info!("Optimization flags only work on GIFs.");
                     }
 
