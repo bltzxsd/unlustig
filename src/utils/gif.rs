@@ -31,7 +31,7 @@ pub struct Gifsicle {
 impl Gifsicle {
     /// Initializes `Gifsicle`'s path.
     ///
-    /// # Result
+    /// # Errors
     /// * On Windows: Returns an error if the `%appdata%` variable
     /// is not found
     /// * On Unix: Returns an error if Gifsicle is not installed
@@ -42,6 +42,9 @@ impl Gifsicle {
     }
 
     /// Runs `Gifsicle` with specified flags.
+    ///
+    /// # Errors
+    /// Returns an error if Gifsicle fails to spawn.
     pub fn run(
         self,
         opt: Option<String>,
@@ -81,6 +84,7 @@ impl Gifsicle {
 }
 
 /// Creates the gifcaption.
+#[allow(clippy::missing_errors_doc)]
 pub fn process_gif(gif: File, font: Font<'static>, cli: &Cli) -> Result<(), anyhow::Error> {
     let decoder = GifDecoder::new(gif)?;
     let (gif_w, gif_h) = decoder.dimensions();
